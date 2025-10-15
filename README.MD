@@ -10,4 +10,4 @@
 - Casos de Prueba (Dominio): Escenarios y validaciones de reglas — docs/db/domain/casos-de-prueba.md
 - Decision Log: Registro de decisiones de diseño — docs/db/domain/decision-log.md
 - WBS (Excel): Matriz WBS editable — docs/plan/WBS.xlsx
-- WBS & Roadmap 2025 (TSV): Vista exportada en TSV — docs/plan/Banca Full-Stack F WBS & Roadmap 2025 - View 1.tsv
+- WBS & Roadmap 2025 (TSV): Vista exportada en TSV — docs/plan/Banca Full-Stack WBS & Roadmap 2025 - View 1.tsv
