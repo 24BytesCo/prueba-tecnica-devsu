@@ -11,7 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0-preview.2.24128.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -21,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Bancalite.Infraestructure\Bancalite.Infraestructure.csproj" />
+    <ProjectReference Include="..\Bancalite.Application\Bancalite.Application.csproj" />
   </ItemGroup>
 
 </Project>
