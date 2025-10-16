@@ -1,0 +1,6 @@
+@Bancalite.WebApi_HostAddress = http://localhost:5208
+
+GET {{Bancalite.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
