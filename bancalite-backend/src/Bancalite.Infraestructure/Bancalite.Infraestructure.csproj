@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Bancalite.Application\Bancalite.Application.csproj" />
+    <ProjectReference Include="..\Bancalite.Persitence\Bancalite.Persitence.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -9,5 +10,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0-preview.2.24128.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0-preview.2.24128.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-preview.2.24128.5" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0-preview.2.24128.5" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0-preview.2" />
+  </ItemGroup>
 
 </Project>

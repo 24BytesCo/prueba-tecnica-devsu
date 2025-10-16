@@ -1,0 +1,4 @@
+[
+  { "Codigo": "DEB", "Nombre": "Débito", "Activo": true },
+  { "Codigo": "CRE", "Nombre": "Crédito", "Activo": true }
+]

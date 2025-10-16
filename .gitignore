@@ -87,6 +87,19 @@ temp/
 # Docker (archivos locales)
 .dockerignore.local
 docker-compose.override.yml
+postgres/
+
+# Archivos binarios grandes / exportaciones
+*.zip
+*.7z
+*.tar
+*.tar.gz
+docs/**/*.zip
+docs/**/*.7z
+docs/**/*.tar*
+
+# Credenciales locales
+firebase-credentials.json
 
 # Otros
 *.orig
