@@ -54,7 +54,7 @@ namespace Bancalite.WebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetClientes(CancellationToken cancellationToken)
         {
-            // Enviar query para obtener clientes
+            // Enviar query para obtener cliente
             var query = new ClienteListQuery.ClienteListQueryRequest();
             var result = await _sender.Send(query, cancellationToken);
             return Ok(result);
