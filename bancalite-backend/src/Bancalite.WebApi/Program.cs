@@ -1,4 +1,5 @@
 using System.Reflection;
+using Bancalite.Infraestructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +50,9 @@ builder.Services.AddSwaggerGen(options =>
 // Health Checks (liveness/readiness básicos)
 builder.Services.AddHealthChecks();
 
+// Infraestructura (DbContext, migraciones/seed en Development vía HostedService)
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+
 var app = builder.Build();
 
 // Swagger UI en entorno de desarrollo
@@ -60,6 +64,7 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Bancalite API v1");
         options.RoutePrefix = "swagger"; // launchSettings apunta a /swagger
     });
+    // Seeding se ejecuta en Infrastructure (HostedService)
 }
 
 // Endpoint de salud simple
@@ -74,4 +79,3 @@ app.MapGet("/status", () => Results.Json(new
 }));
 
 app.Run();
-

@@ -1,0 +1,5 @@
+[
+  { "Codigo": "CC", "Nombre": "Cédula de Ciudadanía", "Activo": true },
+  { "Codigo": "PAS", "Nombre": "Pasaporte", "Activo": true },
+  { "Codigo": "CE",  "Nombre": "Cédula de Extranjería", "Activo": true }
+]
