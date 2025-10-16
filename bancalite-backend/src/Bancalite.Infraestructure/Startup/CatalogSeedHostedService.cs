@@ -106,6 +106,7 @@ public class CatalogSeedHostedService : IHostedService
                             Id = Guid.NewGuid(),
                             PersonaId = persona.Id,
                             AppUserId = admin.Id,
+                            PasswordHash = admin.PasswordHash,
                             Estado = true
                         };
                         db.Clientes.Add(cliente);
