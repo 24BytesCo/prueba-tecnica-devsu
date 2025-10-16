@@ -4,12 +4,15 @@ using System.IO;
 using System.Text.Json;
 using Bancalite.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Bancalite.Persitence.Model;
+using Microsoft.AspNetCore.Identity;
 
 namespace Bancalite.Persitence
 {
-    public class BancaliteDbContext : DbContext
+    public class BancaliteContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
     {
-        public BancaliteDbContext(DbContextOptions<BancaliteDbContext> options)
+        public BancaliteContext(DbContextOptions<BancaliteContext> options)
             : base(options)
         {
         }
@@ -22,8 +25,7 @@ namespace Bancalite.Persitence
         public DbSet<TipoDocumentoIdentidad> TiposDocumentoIdentidad { get; set; } = null!;
         public DbSet<TipoMovimiento> TiposMovimiento { get; set; } = null!;
         public DbSet<Genero> Generos { get; set; } = null!;
-        public DbSet<Rol> Roles { get; set; } = null!;
-
+        
         // Configuración de la conexión (Postgres)
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -38,6 +40,7 @@ namespace Bancalite.Persitence
                     var db   = Environment.GetEnvironmentVariable("DB_NAME") ?? "bancalite";
                     var user = Environment.GetEnvironmentVariable("DB_USER") ?? "admin";
                     var pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? string.Empty;
+
                     conn = $"Host={host};Port={port};Database={db};Username={user};Password={pass};Pooling=true";
                 }
                 optionsBuilder
@@ -59,7 +62,7 @@ namespace Bancalite.Persitence
             modelBuilder.Entity<Cuenta>().ToTable("cuentas");
             modelBuilder.Entity<Movimiento>().ToTable("movimientos");
             modelBuilder.Entity<Genero>().ToTable("generos");
-            modelBuilder.Entity<Rol>().ToTable("roles");
+            // Tabla de roles propia del dominio eliminada en favor de Identity
             modelBuilder.Entity<TipoCuenta>().ToTable("tipos_cuenta");
             modelBuilder.Entity<TipoMovimiento>().ToTable("tipos_movimiento");
             modelBuilder.Entity<TipoDocumentoIdentidad>().ToTable("tipos_documento_identidad");
@@ -110,15 +113,6 @@ namespace Bancalite.Persitence
                 e.Property(x => x.CreatedBy).HasMaxLength(100);
             });
 
-            // Rol
-            modelBuilder.Entity<Rol>(e =>
-            {
-                e.Property(x => x.Nombre).IsRequired().HasMaxLength(100);
-                e.HasIndex(x => x.Nombre).IsUnique(false);
-                e.Property(x => x.Descripcion).HasMaxLength(250);
-                e.Property(x => x.Activo).HasDefaultValue(true);
-            });
-
             // Persona
             modelBuilder.Entity<Persona>(e =>
             {
@@ -155,10 +149,8 @@ namespace Bancalite.Persitence
                     .HasForeignKey<Cliente>(x => x.PersonaId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                e.HasOne(x => x.Rol)
-                    .WithMany(r => r.Clientes)
-                    .HasForeignKey(x => x.RolId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                // Rol de autorización se maneja con Identity; opcionalmente indexamos AppUserId
+                e.HasIndex(x => x.AppUserId).IsUnique(false);
             });
 
             // Cuenta
@@ -263,16 +255,7 @@ namespace Bancalite.Persitence
                 if (data.Length > 0) TiposMovimiento.AddRange(data);
             }
 
-            // Roles (Admin, User)
-            if (!await Roles.AsNoTracking().AnyAsync(ct))
-            {
-                var data = ReadSeed<Rol>("roles.json");
-                foreach (var item in data)
-                {
-                    if (item.Id == Guid.Empty) item.Id = Guid.NewGuid();
-                }
-                if (data.Length > 0) Roles.AddRange(data);
-            }
+            // Roles: se siembran con RoleManager de Identity, no en este contexto
 
             await SaveChangesAsync(ct);
         }

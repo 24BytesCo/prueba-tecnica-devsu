@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Bancalite.Infraestructure.Startup;
+using Microsoft.AspNetCore.Identity;
+using Bancalite.Persitence.Model;
 
 namespace Bancalite.Infraestructure;
 
@@ -26,7 +28,20 @@ public static class DependencyInjection
             connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass};Pooling=true";
         }
 
-        services.AddDbContext<BancaliteDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<BancaliteContext>(options => options.UseNpgsql(connectionString));
+
+        // Identity Core (usuarios y roles) usando el mismo DbContext
+        services.AddIdentityCore<AppUser>(options =>
+            {
+                options.User.RequireUniqueEmail = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequiredLength = 6;
+            })
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<BancaliteContext>();
 
         // Ejecuta migraciones y seed en Development al iniciar la app
         if (env.IsDevelopment())
