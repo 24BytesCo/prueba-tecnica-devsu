@@ -1,34 +1,26 @@
 using Bancalite.Persitence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Bancalite.Infraestructure.Startup;
 using Microsoft.AspNetCore.Identity;
 using Bancalite.Persitence.Model;
+using Bancalite.Application.Interface;
+using Bancalite.Infraestructure.Security;
+using Microsoft.Extensions.Options;
+using Bancalite.Infraestructure.Email;
 
 namespace Bancalite.Infraestructure;
 
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registra servicios de infraestructura: DbContext, seeding y utilidades.
+    /// Registra servicios de infraestructura: persistencia (DbContext), Identity y seeding.
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config, IHostEnvironment env)
     {
-        // Construir cadena para Postgres desde appsettings o variables de entorno
-        var connectionString = config.GetConnectionString("Default");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            var host = config["DB_HOST"] ?? "localhost";
-            var port = config["DB_PORT"] ?? "5432";
-            var db   = config["DB_NAME"] ?? "bancalite";
-            var user = config["DB_USER"] ?? "admin";
-            var pass = config["DB_PASSWORD"] ?? string.Empty;
-            connectionString = $"Host={host};Port={port};Database={db};Username={user};Password={pass};Pooling=true";
-        }
-
-        services.AddDbContext<BancaliteContext>(options => options.UseNpgsql(connectionString));
+        // Registrar persistencia (DbContext y opciones) centralizada en capa Persistence
+        services.AddPersistence();
 
         // Identity Core (usuarios y roles) usando el mismo DbContext
         services.AddIdentityCore<AppUser>(options =>
@@ -41,7 +33,28 @@ public static class DependencyInjection
                 options.Password.RequiredLength = 6;
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<BancaliteContext>();
+            .AddEntityFrameworkStores<BancaliteContext>()
+            .AddDefaultTokenProviders();
+
+        // Opciones tipadas para JWT
+        services.AddOptions<JwtOptions>()
+            .Bind(config.GetSection("JWT").Exists() ? config.GetSection("JWT") : config.GetSection("Jwt"))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Key), "JWT:Key es requerido")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer), "JWT:Issuer es requerido")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Audience), "JWT:Audience es requerido")
+            .Validate(o => o.ExpiresMinutes > 0, "JWT:ExpiresMinutes debe ser > 0");
+
+        // Servicios de seguridad / tokens
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<IUserAccessor, UserAccessor>();
+
+        // Email (SMTP)
+        services.AddOptions<SmtpOptions>()
+            .Bind(config.GetSection("Smtp"))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "Smtp:Host es requerido")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.SenderEmail), "Smtp:SenderEmail es requerido");
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Ejecuta migraciones y seed en Development al iniciar la app
         if (env.IsDevelopment())
