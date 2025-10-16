@@ -1,0 +1,4 @@
+[
+  { "Nombre": "Admin", "Descripcion": "Administrador del sistema", "Activo": true },
+  { "Nombre": "User",  "Descripcion": "Usuario estándar",          "Activo": true }
+]

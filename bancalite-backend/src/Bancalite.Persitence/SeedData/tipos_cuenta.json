@@ -1,0 +1,5 @@
+[
+  { "Codigo": "AHO", "Nombre": "Ahorros", "Activo": true },
+  { "Codigo": "COR", "Nombre": "Corriente", "Activo": true },
+  { "Codigo": "PLZ", "Nombre": "Plazo Fijo", "Activo": true }
+]
