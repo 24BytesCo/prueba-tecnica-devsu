@@ -53,8 +53,6 @@ packages/
 # ASP.NET / Config locales
 appsettings.Local.json
 appsettings.*.local.json
-appsettings.Development.json
-bancalite-backend/src/Bancalite.WebApi/appsettings.Development.json
 *.local.json
 secrets.json
 
