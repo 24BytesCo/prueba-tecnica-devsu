@@ -26,7 +26,7 @@ namespace Bancalite.Infraestructure.Security
         }
 
         /// <summary>
-        /// Genera un token JWT para el usuario indicado con claims básicos y de rol.
+        /// Se genera un token JWT para el usuario indicado con claims básicos y de rol.
         /// </summary>
         public Task<string> GenerarToken(AppUser user)
         {
@@ -62,7 +62,8 @@ namespace Bancalite.Infraestructure.Security
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new(ClaimTypes.Name, nombreCompleto),
-                new(ClaimTypes.Email, user.Email ?? cliente?.Persona.Email ?? "")
+                new(ClaimTypes.Email, user.Email ?? cliente?.Persona.Email ?? ""),
+                new("sst", user.SecurityStamp ?? string.Empty)
             };
             if (!string.IsNullOrWhiteSpace(user.Email))
             {

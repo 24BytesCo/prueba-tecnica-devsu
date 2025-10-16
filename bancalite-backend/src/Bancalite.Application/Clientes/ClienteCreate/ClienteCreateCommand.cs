@@ -56,7 +56,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
 
                 try
                 {
-                    // Mapeo de la información a entidades de dominio
+                    // Se mapea la información a entidades de dominio
                     var persona = new Persona
                     {
                         Id = Guid.NewGuid(),
@@ -74,7 +74,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                             ? null : request.clienteCreateRequest.Email!.Trim()
                     };
 
-                    // Crear o vincular usuario de Identity
+                    // Se crea o vincula el usuario de Identity
                     AppUser? appUser = null;
                     if (!string.IsNullOrWhiteSpace(request.clienteCreateRequest.Email))
                     {
@@ -114,7 +114,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                             }
                         }
 
-                        // Rol: usar IdRol o 'User' por defecto
+                        // Se determina el rol: IdRol o 'User' por defecto
                         string roleName = "User";
                         if (request.clienteCreateRequest.IdRol.HasValue)
                         {
@@ -122,7 +122,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                             if (role != null) roleName = role.Name!;
                         }
 
-                        // Asegurar que el rol exista
+                        // Se asegura que el rol exista
                         var roleExists = await _roleManager.RoleExistsAsync(roleName);
                         if (!roleExists)
                         {
@@ -134,7 +134,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                             }
                         }
 
-                        // Asignar rol si no lo tiene
+                        // Se asigna el rol si no lo tiene
                         if (!await _userManager.IsInRoleAsync(appUser, roleName))
                         {
                             var addRole = await _userManager.AddToRoleAsync(appUser, roleName);
@@ -158,7 +158,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                         Estado = true
                     };
 
-                    // Guardar en la base de datos (transaccional por SaveChanges)
+                    // Se guarda en la base de datos (transaccional por SaveChanges)
                     await _context.Personas.AddAsync(persona, cancellationToken);
                     await _context.Clientes.AddAsync(cliente, cancellationToken);
                     await _context.SaveChangesAsync(cancellationToken);

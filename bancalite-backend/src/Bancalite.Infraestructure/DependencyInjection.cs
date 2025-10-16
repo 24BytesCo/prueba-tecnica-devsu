@@ -9,6 +9,7 @@ using Bancalite.Application.Interface;
 using Bancalite.Infraestructure.Security;
 using Microsoft.Extensions.Options;
 using Bancalite.Infraestructure.Email;
+using Bancalite.Application.Config;
 
 namespace Bancalite.Infraestructure;
 
@@ -43,6 +44,11 @@ public static class DependencyInjection
             .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer), "JWT:Issuer es requerido")
             .Validate(o => !string.IsNullOrWhiteSpace(o.Audience), "JWT:Audience es requerido")
             .Validate(o => o.ExpiresMinutes > 0, "JWT:ExpiresMinutes debe ser > 0");
+
+        // Opciones de Auth (refresh)
+        services.AddOptions<AuthOptions>()
+            .Bind(config.GetSection("Auth"))
+            .Validate(o => o.RefreshDays > 0, "Auth:RefreshDays debe ser > 0");
 
         // Servicios de seguridad / tokens
         services.AddScoped<ITokenService, TokenService>();

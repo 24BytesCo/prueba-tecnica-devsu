@@ -1,9 +1,12 @@
 using System.Text;
+using System.Security.Claims;
 using Bancalite.Infraestructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Identity;
+using Bancalite.Persitence.Model;
 
 namespace Bancalite.WebApi.Extensions
 {
@@ -32,6 +35,29 @@ namespace Bancalite.WebApi.Extensions
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.FromMinutes(2)
+                    };
+
+                    // Validación del SecurityStamp para revocación inmediata (logout)
+                    o.Events = new JwtBearerEvents
+                    {
+                        OnTokenValidated = async context =>
+                        {
+                            var principal = context.Principal;
+                            var userId = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                            var sst = principal?.FindFirst("sst")?.Value;
+                            if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(sst))
+                            {
+                                context.Fail("Unauthorized");
+                                return;
+                            }
+
+                            var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<AppUser>>();
+                            var user = await userManager.FindByIdAsync(userId);
+                            if (user == null || !string.Equals(user.SecurityStamp, sst, StringComparison.Ordinal))
+                            {
+                                context.Fail("Token revoked");
+                            }
+                        }
                     };
                 });
 

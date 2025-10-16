@@ -10,6 +10,10 @@ using static Bancalite.Application.Auth.Login.LoginCommand;
 using Microsoft.Extensions.Hosting;
 using Bancalite.Application.Auth.ForgotPassword;
 using Bancalite.Application.Auth.ResetPassword;
+using Bancalite.Application.Auth.Refresh;
+using Bancalite.Application.Auth.Logout;
+using Bancalite.Application.Auth.Me;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -81,6 +85,39 @@ namespace Bancalite.WebApi.Controllers
                 return BadRequest(result.Error);
             }
             return Ok(new { reset = true });
+        }
+
+        /// <summary>
+        /// Renueva el access token rotando el refresh token.
+        /// </summary>
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _iSender.Send(new RefreshTokenCommand.RefreshTokenCommandRequest(request), cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : Unauthorized();
+        }
+
+        /// <summary>
+        /// Revoca el refresh token (logout).
+        /// </summary>
+        [HttpPost("logout")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _iSender.Send(new LogoutCommand.LogoutCommandRequest(request.RefreshToken), cancellationToken);
+            return result.IsSuccess ? Ok(new { revoked = true }) : Unauthorized();
+        }
+
+        /// <summary>
+        /// Perfil del usuario autenticado actual.
+        /// </summary>
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> Me(CancellationToken cancellationToken)
+        {
+            var result = await _iSender.Send(new MeQuery.MeQueryRequest(), cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : Unauthorized();
         }
     }
 }

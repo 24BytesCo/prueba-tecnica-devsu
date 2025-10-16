@@ -5,6 +5,8 @@ using Bancalite.Persitence.Model;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Bancalite.Application.Config;
 
 namespace Bancalite.Application.Auth.Login
 {
@@ -26,12 +28,14 @@ namespace Bancalite.Application.Auth.Login
             private readonly UserManager<AppUser> _userManager;
             private readonly ITokenService _tokenService;
             private readonly BancaliteContext _context;
+            private readonly IOptions<AuthOptions> _authOptions;
 
-            public LoginCommandHandler(UserManager<AppUser> userManager, ITokenService tokenService, BancaliteContext context)
+            public LoginCommandHandler(UserManager<AppUser> userManager, ITokenService tokenService, BancaliteContext context, IOptions<AuthOptions> authOptions)
             {
                 _userManager = userManager;
                 _tokenService = tokenService;
                 _context = context;
+                _authOptions = authOptions;
             }
 
             /// <summary>
@@ -64,16 +68,28 @@ namespace Bancalite.Application.Auth.Login
                 .Include(c => c.Persona)
                 .FirstOrDefaultAsync(c => c.AppUserId == user.Id, cancellationToken: cancellationToken);
 
-                // Mapeo de perfil de retorno
+                // Se genera el refresh token y se almacena en AspNetUserTokens
+                var days = _authOptions.Value.RefreshDays > 0 ? _authOptions.Value.RefreshDays : 7;
+                var refresh = GenerateRefreshTokenString(TimeSpan.FromDays(days));
+                await _userManager.RemoveAuthenticationTokenAsync(user, "Bancalite", "RefreshToken");
+                await _userManager.SetAuthenticationTokenAsync(user, "Bancalite", "RefreshToken", refresh);
+
+                // Se mapea el perfil de retorno
                 var profile = new Profile
                 {
                     NombreCompleto = cliente != null ? $"{cliente.Persona.Nombres} {cliente.Persona.Apellidos}" : user.UserName,
                     Email = user.Email,
                     Token = await _tokenService.GenerarToken(user),
+                    RefreshToken = refresh
                 };
 
                 return Result<Profile>.Success(profile);
             }
+        }
+        private static string GenerateRefreshTokenString(TimeSpan lifetime)
+        {
+            var expires = DateTime.UtcNow.Add(lifetime).Ticks;
+            return $"{Guid.NewGuid():N}.{expires}";
         }
     }
 }

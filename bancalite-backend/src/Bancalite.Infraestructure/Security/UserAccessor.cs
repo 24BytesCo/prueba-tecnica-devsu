@@ -20,20 +20,23 @@ namespace Bancalite.Infraestructure.Security
         }
 
         /// <summary>
-        /// Obtiene el nombre de usuario del usuario autenticado.
+        /// Obtiene un identificador del usuario autenticado (prioriza Email).
         /// </summary>
         /// <returns>Nombre de usuario o cadena vacía si no autenticado.</returns>
         public string GetUsername()
         {
-            // Toma el claim Name; si no hay, intenta con Email; si no, vacío
+            // Se prioriza el Email; si no hay, se intenta con NameIdentifier; luego Name
             var user = _httpContextAccessor.HttpContext?.User; // usuario actual
             if (user?.Identity?.IsAuthenticated != true) return string.Empty; // no autenticado
 
-            var name = user.FindFirstValue(ClaimTypes.Name);
-            if (!string.IsNullOrWhiteSpace(name)) return name;
-
             var email = user.FindFirstValue(ClaimTypes.Email);
-            return email ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(email)) return email;
+
+            var id = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrWhiteSpace(id)) return id;
+
+            var name = user.FindFirstValue(ClaimTypes.Name);
+            return name ?? string.Empty;
         }
     }
 }
