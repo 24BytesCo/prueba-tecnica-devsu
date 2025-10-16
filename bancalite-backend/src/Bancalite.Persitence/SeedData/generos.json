@@ -1,0 +1,5 @@
+[
+  { "Codigo": "M", "Nombre": "Masculino", "Activo": true },
+  { "Codigo": "F", "Nombre": "Femenino", "Activo": true },
+  { "Codigo": "X", "Nombre": "No binario", "Activo": true }
+]
