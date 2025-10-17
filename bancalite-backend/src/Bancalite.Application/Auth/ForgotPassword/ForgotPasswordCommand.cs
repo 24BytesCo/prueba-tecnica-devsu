@@ -5,6 +5,7 @@ using Bancalite.Persitence.Model;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Hosting;
 
 namespace Bancalite.Application.Auth.ForgotPassword;
 
@@ -33,12 +34,14 @@ public class ForgotPasswordCommand
         private readonly UserManager<AppUser> _userManager;
         private readonly IEmailSender _emailSender;
         private readonly IValidator<ForgotPasswordRequest> _validator;
+        private readonly IHostEnvironment _env;
 
-        public Handler(UserManager<AppUser> userManager, IEmailSender emailSender, IValidator<ForgotPasswordRequest> validator)
+        public Handler(UserManager<AppUser> userManager, IEmailSender emailSender, IValidator<ForgotPasswordRequest> validator, IHostEnvironment env)
         {
             _userManager = userManager;
             _emailSender = emailSender;
             _validator = validator;
+            _env = env;
         }
 
         public async Task<Result<ForgotPasswordResponse>> Handle(ForgotPasswordCommandRequest message, CancellationToken ct)
@@ -71,11 +74,12 @@ public class ForgotPasswordCommand
 
             await _emailSender.SendAsync(message.Request.Email, subject, html, ct: ct);
 
+            var includeDebug = _env.IsDevelopment() || message.Request.IncludeDebug;
             var response = new ForgotPasswordResponse
             {
                 Sent = true,
-                Link = message.Request.IncludeDebug ? link : null,
-                Token = message.Request.IncludeDebug ? token : null
+                Link = includeDebug ? link : null,
+                Token = includeDebug ? token : null
             };
 
             return Result<ForgotPasswordResponse>.Success(response);

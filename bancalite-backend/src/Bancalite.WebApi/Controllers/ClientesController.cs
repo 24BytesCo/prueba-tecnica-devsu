@@ -6,6 +6,13 @@ using Microsoft.AspNetCore.Authorization;
 using Bancalite.Application.Clientes.GetCliente;
 using Bancalite.Application.Clientes.ClienteUpdate;
 using Bancalite.Application.Clientes.ClienteDelete;
+using static Bancalite.Application.Clientes.ClienteCreate.ClienteCreateCommand;
+using Bancalite.Application.Core;
+using static Bancalite.Application.Clientes.ClienteUpdate.ClienteUpdateCommand;
+using static Bancalite.Application.Clientes.ClienteDelete.ClienteDeleteCommand;
+using static Bancalite.Application.Clientes.GetCliente.GetClienteQuery;
+using System.Security.Claims;
+using Bancalite.WebApi.Extensions;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -41,13 +48,11 @@ namespace Bancalite.WebApi.Controllers
         /// </remarks>
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Guid>>> CreateCliente([FromBody] ClienteCreateRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult<Result<Guid>>> CreateCliente([FromBody] ClienteCreateRequest request, CancellationToken cancellationToken)
         {
-            // Enviar comando a Application (CQRS)
-            var command = new ClienteCreateCommand.ClienteCreateCommandRequest(request);
-            
+            var command = new ClienteCreateCommandRequest(request);
             var result = await _sender.Send(command, cancellationToken);
-            return Ok(result);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -61,7 +66,9 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="cancellationToken">Token de cancelación.</param>
         /// <returns>Listado paginado de clientes.</returns>
         [HttpGet]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>>> GetClientes(
+        //Solo admin
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<Result<Paged<ClienteListItem>>>> GetClientes(
             [FromQuery] int pagina = 1,
             [FromQuery] int tamano = 10,
             [FromQuery] string? nombres = null,
@@ -69,10 +76,9 @@ namespace Bancalite.WebApi.Controllers
             [FromQuery] bool? estado = null,
             CancellationToken cancellationToken = default)
         {
-            // Enviar query para obtener clientes
             var query = new ClienteListQuery.ClienteListQueryRequest(pagina, tamano, nombres, numeroDocumento, estado);
             var result = await _sender.Send(query, cancellationToken);
-            return Ok(result);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -81,10 +87,12 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="id">Id del cliente.</param>
         /// <param name="cancellationToken">Token de cancelación.</param>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<ClienteDto>>> GetClienteById(Guid id, CancellationToken cancellationToken)
+        //debe estar logueado
+        [Authorize]
+        public async Task<ActionResult<Result<ClienteDto>>> GetClienteById(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new GetClienteQuery.GetClienteQueryRequest(id), cancellationToken);
-            return result.IsSuccess ? Ok(result) : NotFound(result);
+            var result = await _sender.Send(new GetClienteQueryRequest(id), cancellationToken);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -94,11 +102,11 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="request">Datos completos del cliente a aplicar.</param>
         /// <param name="cancellationToken">Token de cancelación.</param>
         [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<bool>>> PutCliente(Guid id, [FromBody] ClientePutRequest request, CancellationToken cancellationToken)
+        [Authorize]
+        public async Task<ActionResult<Result<bool>>> PutCliente(Guid id, [FromBody] ClientePutRequest request, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new ClienteUpdateCommand.ClientePutCommandRequest(id, request), cancellationToken);
-            return result.IsSuccess ? Ok(result) : BadRequest(result);
+            var result = await _sender.Send(new ClientePutCommandRequest(id, request), cancellationToken);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -108,11 +116,11 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="request">Campos parciales del cliente.</param>
         /// <param name="cancellationToken">Token de cancelación.</param>
         [HttpPatch("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<bool>>> PatchCliente(Guid id, [FromBody] ClientePatchRequest request, CancellationToken cancellationToken)
+        [Authorize]
+        public async Task<ActionResult<Result<bool>>> PatchCliente(Guid id, [FromBody] ClientePatchRequest request, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new ClienteUpdateCommand.ClientePatchCommandRequest(id, request), cancellationToken);
-            return result.IsSuccess ? Ok(result) : BadRequest(result);
+            var result = await _sender.Send(new ClientePatchCommandRequest(id, request), cancellationToken);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -121,12 +129,11 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="id">Id del cliente a desactivar.</param>
         /// <param name="cancellationToken">Token de cancelación.</param>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<bool>>> DeleteCliente(Guid id, CancellationToken cancellationToken)
+        [Authorize]
+        public async Task<ActionResult<Result<bool>>> DeleteCliente(Guid id, CancellationToken cancellationToken)
         {
-            var result = await _sender.Send(new ClienteDeleteCommand.ClienteDeleteCommandRequest(id), cancellationToken);
-            return result.IsSuccess ? Ok(result) : NotFound(result);
+            var result = await _sender.Send(new ClienteDeleteCommandRequest(id), cancellationToken);
+            return this.FromResult(result);
         }
     }
 }
-

@@ -9,6 +9,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Bancalite.Persitence.Model;
+using Bancalite.Application.Core;
 
 namespace Bancalite.Application.Clientes.ClienteCreate
 {
@@ -21,12 +22,12 @@ namespace Bancalite.Application.Clientes.ClienteCreate
         /// Mensaje de solicitud para crear un cliente (CQRS/MediatR).
         /// </summary>
         /// <param name="clienteCreateRequest">Datos de entrada para crear el cliente.</param>
-        public record ClienteCreateCommandRequest(ClienteCreateRequest clienteCreateRequest) : IRequest<Bancalite.Application.Core.Result<Guid>>;
+        public record ClienteCreateCommandRequest(ClienteCreateRequest clienteCreateRequest) : IRequest<Result<Guid>>;
 
         /// <summary>
         /// Manejador del comando de creación de cliente.
         /// </summary>
-        internal class ClienteCreateCommandHandler : IRequestHandler<ClienteCreateCommandRequest, Bancalite.Application.Core.Result<Guid>>
+        internal class ClienteCreateCommandHandler : IRequestHandler<ClienteCreateCommandRequest, Result<Guid>>
         {
             private readonly BancaliteContext _context;
             private readonly UserManager<AppUser> _userManager;
@@ -50,7 +51,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
             /// - Copia <c>PasswordHash</c> del AppUser hacia Cliente según especificación.
             /// - Persiste de forma transaccional y retorna el Id del Cliente.
             /// </remarks>
-            public async Task<Bancalite.Application.Core.Result<Guid>> Handle(ClienteCreateCommandRequest request, CancellationToken cancellationToken)
+            public async Task<Result<Guid>> Handle(ClienteCreateCommandRequest request, CancellationToken cancellationToken)
             {
                 // Validaciones se ejecutan automáticamente vía pipeline de MediatR (ValidationBehavior)
 
@@ -164,12 +165,12 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                     await _context.SaveChangesAsync(cancellationToken);
 
                     // Retornar el Id del cliente creado
-                    return Bancalite.Application.Core.Result<Guid>.Success(cliente.Id);
+                    return Result<Guid>.Success(cliente.Id);
                 }
                 catch (DbUpdateException ex)
                 {
                     // Error de persistencia (FK/UK, etc.)
-                    return Bancalite.Application.Core.Result<Guid>.Failure("No se pudo crear el cliente en la base de datos");
+                    return Result<Guid>.Failure($"No se pudo crear el cliente en la base de datos: {ex.Message}");
                 }
             }
         }

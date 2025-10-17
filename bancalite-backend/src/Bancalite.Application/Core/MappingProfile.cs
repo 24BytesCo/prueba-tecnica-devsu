@@ -6,6 +6,8 @@ using AutoMapper;
 using Bancalite.Domain;
 using Bancalite.Application.Clientes.ClienteList;
 using Bancalite.Application.Clientes.GetCliente;
+using Bancalite.Application.Cuentas.CuentaList;
+using Bancalite.Application.Cuentas.CuentaResponse;
 
 namespace Bancalite.Application.Core
 {
@@ -52,6 +54,24 @@ namespace Bancalite.Application.Core
                 .ForMember(d => d.Estado, opt => opt.MapFrom(s => s.Estado))
                 .ForMember(d => d.RolId, opt => opt.Ignore())
                 .ForMember(d => d.RolNombre, opt => opt.Ignore());
+
+            // Cuenta -> CuentaListItem
+            // Mapea campos básicos y nombres compuestos
+            CreateMap<Cuenta, CuentaListItem>()
+                .ForMember(d => d.CuentaId, o => o.MapFrom(s => s.Id))
+                .ForMember(d => d.TipoCuentaNombre, o => o.MapFrom(s => s.TipoCuenta.Nombre))
+                .ForMember(d => d.ClienteNombre, o => o.MapFrom(s => s.Cliente.Persona.Nombres + " " + s.Cliente.Persona.Apellidos))
+                .ForMember(d => d.Estado, o => o.MapFrom(s => s.Estado.ToString()));
+
+            // Cuenta -> CuentaDto
+            // Incluye fechas y estado como string para Swagger
+            CreateMap<Cuenta, CuentaDto>()
+                .ForMember(d => d.CuentaId, o => o.MapFrom(s => s.Id))
+                .ForMember(d => d.TipoCuentaNombre, o => o.MapFrom(s => s.TipoCuenta.Nombre))
+                .ForMember(d => d.ClienteNombre, o => o.MapFrom(s => s.Cliente.Persona.Nombres + " " + s.Cliente.Persona.Apellidos))
+                .ForMember(d => d.Estado, o => o.MapFrom(s => s.Estado.ToString()))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => s.CreatedAt))
+                .ForMember(d => d.UpdatedAt, o => o.MapFrom(s => s.UpdatedAt));
         }
     }
 }

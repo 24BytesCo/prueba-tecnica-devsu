@@ -76,7 +76,7 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
     // No-op: con autenticación de prueba siempre somos Admin
     private Task AuthenticateAsAdminAsync() => Task.CompletedTask;
 
-    [Fact(DisplayName = "POST /clientes crea y GET /clientes/{id} devuelve el detalle")]
+    [Fact(DisplayName = "POST /clientes crea; GET /clientes/{id} por otro usuario → 403")]
     public async Task Create_Then_GetById_Should_Work()
     {
         // arrange: catálogos mínimos
@@ -107,16 +107,11 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
         created!.IsSuccess.Should().BeTrue();
         created.Datos.Should().NotBe(Guid.Empty);
 
-        // act: consultar detalle
-        var get = await _client.GetAsync($"/api/clientes/{created!.Datos}");
-        get.IsSuccessStatusCode.Should().BeTrue();
-        var detail = await get.Content.ReadFromJsonAsync<ApiResult<ClienteDto>>();
-
-        // assert: datos básicos
-        detail!.IsSuccess.Should().BeTrue();
-        detail.Datos!.Nombres.Should().Be("Juan Test");
-        detail.Datos!.Apellidos.Should().Be("Pérez QA");
-        detail.Datos!.Estado.Should().BeTrue();
+        // act: consultar detalle como otro usuario (no admin, no propietario) => 403
+        using var getMsg = new HttpRequestMessage(HttpMethod.Get, $"/api/clientes/{created!.Datos}");
+        getMsg.Headers.Add("X-Test-Email", "otro.user@test.local");
+        var get = await _client.SendAsync(getMsg);
+        get.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact(DisplayName = "GET /clientes pagina y filtra por nombres")]
@@ -164,7 +159,7 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
         page2!.Datos!.Items.Count.Should().Be(1);
     }
 
-    [Fact(DisplayName = "PUT /clientes/{id} actualiza todos los campos básicos")]
+    [Fact(DisplayName = "PUT /clientes/{id} por no propietario → 403")]
     public async Task Put_Should_Update_All_Fields()
     {
         // arrange: catálogos
@@ -202,18 +197,17 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
             Estado = true
         };
 
-        // act: PUT
-        var put = await _client.PutAsJsonAsync($"/api/clientes/{created!.Datos}", putReq);
-        put.EnsureSuccessStatusCode();
-
-        // assert: ver detalle actualizado
-        var detail = await _client.GetFromJsonAsync<ApiResult<ClienteDto>>($"/api/clientes/{created!.Datos}");
-        detail!.Datos!.Apellidos.Should().Be("Actualizada");
-        detail.Datos!.Direccion.Should().Be("Nueva 123");
-        detail.Datos!.Telefono.Should().Be("555");
+        // act: PUT como otro usuario (no propietario) => 403
+        using var putMsg = new HttpRequestMessage(HttpMethod.Put, $"/api/clientes/{created!.Datos}")
+        {
+            Content = JsonContent.Create(putReq)
+        };
+        putMsg.Headers.Add("X-Test-Email", "otro.user@test.local");
+        var put = await _client.SendAsync(putMsg);
+        put.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "PATCH /clientes/{id} actualiza parcialmente (Telefono, Estado)")]
+    [Fact(DisplayName = "PATCH /clientes/{id} por no propietario → 403")]
     public async Task Patch_Should_Update_Partial_Fields()
     {
         // arrange: catálogos
@@ -243,17 +237,17 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
             Estado = false
         };
 
-        // act: PATCH
-        var patch = await _client.PatchAsJsonAsync($"/api/clientes/{created!.Datos}", patchReq);
-        patch.EnsureSuccessStatusCode();
-
-        // assert: ver detalle actualizado
-        var detail = await _client.GetFromJsonAsync<ApiResult<ClienteDto>>($"/api/clientes/{created!.Datos}");
-        detail!.Datos!.Telefono.Should().Be("777");
-        detail.Datos!.Estado.Should().BeFalse();
+        // act: PATCH como otro usuario (no propietario) => 403
+        using var patchMsg = new HttpRequestMessage(HttpMethod.Patch, $"/api/clientes/{created!.Datos}")
+        {
+            Content = JsonContent.Create(patchReq)
+        };
+        patchMsg.Headers.Add("X-Test-Email", "otro.user@test.local");
+        var patch = await _client.SendAsync(patchMsg);
+        patch.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    [Fact(DisplayName = "DELETE /clientes/{id} realiza soft-delete (Estado=false)")]
+    [Fact(DisplayName = "DELETE /clientes/{id} por no propietario → 403")]
     public async Task Delete_Should_SoftDelete()
     {
         // arrange: catálogos
@@ -276,13 +270,11 @@ public class ClientesControllerTests : IClassFixture<ClientesWebApiFactory>
         post.EnsureSuccessStatusCode();
         var created = await post.Content.ReadFromJsonAsync<ApiResult<Guid>>();
 
-        // act: DELETE
-        var del = await _client.DeleteAsync($"/api/clientes/{created!.Datos}");
-        del.EnsureSuccessStatusCode();
-
-        // assert: detalle con Estado=false
-        var detail = await _client.GetFromJsonAsync<ApiResult<ClienteDto>>($"/api/clientes/{created!.Datos}");
-        detail!.Datos!.Estado.Should().BeFalse();
+        // act: DELETE como otro usuario (no propietario) => 403
+        using var delMsg = new HttpRequestMessage(HttpMethod.Delete, $"/api/clientes/{created!.Datos}");
+        delMsg.Headers.Add("X-Test-Email", "otro.user@test.local");
+        var del = await _client.SendAsync(delMsg);
+        del.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     // Tipos para mapear respuestas simples del API
