@@ -91,6 +91,8 @@ dotnet ef database update -p src/Bancalite.Persitence -s src/Bancalite.WebApi
 - Bearer: usar `Authorize` en Swagger y enviar `Bearer <token>`
 - Roles: `Admin` y `User`
 - Creación de clientes: `POST /api/clientes` requiere rol `Admin`
+  
+Nota sobre roles: la verificación de rol usa primero los claims del token (por ejemplo, `role=Admin`). Si el claim no está presente, se valida contra los roles en Identity (base de datos).
 
 ## Cuentas (API)
 
@@ -185,7 +187,7 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
 - CRUD Clientes: implementado (con seguridad Admin para crear y propietario/admin para consultar/actualizar/borrar).
 - CRUD Cuentas: implementado con reglas y roles anteriores.
 - Movimientos: implementado (créditos/débitos, tope diario, sobregiro, idempotencia, listado por fechas).
-- Reporte de estado de cuenta (JSON/PDF base64): pendiente.
+- Reporte de estado de cuenta (JSON y PDF): implementado. El PDF se entrega como `application/pdf` con nombre de archivo y paginación básica.
 
 ## Testing
 
@@ -216,6 +218,10 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
   - En pruebas se usa autenticación de test con cabecera `X-Test-Email` para simular identidad:
     - Sin cabecera → Admin por defecto.
     - Con cabecera → Usuario con ese email (sin rol Admin), útil para validar casos de propietario/no-admin.
+  - Reportes:
+    - JSON por cliente y por cuenta: totales y saldos correctos.
+    - Validaciones: sin filtros → 400; rango inválido → 400; número inexistente → 404; cuenta de otro usuario → 403.
+    - PDF: `Content-Type` correcto, archivo no vacío y tamaño mayor cuando hay paginación (muchos movimientos).
 
 ## Reportes (API)
 
