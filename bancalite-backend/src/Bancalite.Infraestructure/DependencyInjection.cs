@@ -10,6 +10,8 @@ using Bancalite.Infraestructure.Security;
 using Microsoft.Extensions.Options;
 using Bancalite.Infraestructure.Email;
 using Bancalite.Application.Config;
+using Bancalite.Application.Interface;
+using Bancalite.Infraestructure.Report;
 
 namespace Bancalite.Infraestructure;
 
@@ -66,6 +68,7 @@ public static class DependencyInjection
             .Validate(o => !string.IsNullOrWhiteSpace(o.Host), "Smtp:Host es requerido")
             .Validate(o => !string.IsNullOrWhiteSpace(o.SenderEmail), "Smtp:SenderEmail es requerido");
         services.AddScoped<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<IPdfRenderer, PdfRenderer>();
 
         // Ejecuta migraciones y seed en Development al iniciar la app
         if (env.IsDevelopment())
