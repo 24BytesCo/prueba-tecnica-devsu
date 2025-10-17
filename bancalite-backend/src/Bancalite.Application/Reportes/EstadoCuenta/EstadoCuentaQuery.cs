@@ -46,11 +46,17 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
                 string? clienteNombre = null;
                 string? numeroCuenta = null;
 
-                bool esAdmin = await (from ur in _context.UserRoles
-                                       join r in _context.Roles on ur.RoleId equals r.Id
-                                       join u in _context.Users on ur.UserId equals u.Id
-                                       where (u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad) && r.Name == "Admin"
-                                       select ur).AnyAsync(ct);
+                // Determinar si es Admin: preferir el rol del principal actual y, como
+                // respaldo, verificar en la base de datos (útil cuando no hay claims).
+                bool esAdmin = _userAccessor.IsInRole("Admin");
+                if (!esAdmin)
+                {
+                    esAdmin = await (from ur in _context.UserRoles
+                                     join r in _context.Roles on ur.RoleId equals r.Id
+                                     join u in _context.Users on ur.UserId equals u.Id
+                                     where (u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad) && r.Name == "Admin"
+                                     select ur).AnyAsync(ct);
+                }
 
                 if (!string.IsNullOrWhiteSpace(req.NumeroCuenta))
                 {

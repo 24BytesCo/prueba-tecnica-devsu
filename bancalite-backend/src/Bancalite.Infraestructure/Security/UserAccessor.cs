@@ -38,5 +38,14 @@ namespace Bancalite.Infraestructure.Security
             var name = user.FindFirstValue(ClaimTypes.Name);
             return name ?? string.Empty;
         }
+
+        /// <summary>
+        /// Verifica si el usuario autenticado actual pertenece a un rol.
+        /// </summary>
+        public bool IsInRole(string role)
+        {
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.Identity?.IsAuthenticated == true && user.IsInRole(role);
+        }
     }
 }
