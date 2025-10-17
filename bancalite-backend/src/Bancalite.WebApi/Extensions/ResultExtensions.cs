@@ -23,25 +23,14 @@ namespace Bancalite.WebApi.Extensions
 
             var error = result.Error ?? string.Empty;
 
-            if (error.StartsWith("Unauthorized", StringComparison.OrdinalIgnoreCase))
-                return controller.Unauthorized(result);
-
-            if (error.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase))
-                return controller.StatusCode(403, result);
-
-            if (error.StartsWith("Conflict", StringComparison.OrdinalIgnoreCase) ||
-                error.IndexOf("duplicidad", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                error.IndexOf("ya existe", StringComparison.OrdinalIgnoreCase) >= 0)
-                return controller.Conflict(result);
-
-            if (error.StartsWith("Unprocessable", StringComparison.OrdinalIgnoreCase))
-                return controller.UnprocessableEntity(result);
-
-            if (error.StartsWith("No encontrado", StringComparison.OrdinalIgnoreCase) ||
-                error.IndexOf("no encontrado", StringComparison.OrdinalIgnoreCase) >= 0)
-                return controller.NotFound(result);
-
-            return controller.BadRequest(result);
+            var (status, title) = MapStatus(error);
+            var pd = new ProblemDetails
+            {
+                Title = title,
+                Detail = error,
+                Status = status
+            };
+            return new ObjectResult(pd) { StatusCode = status };
         }
 
         /// <summary>
@@ -57,25 +46,24 @@ namespace Bancalite.WebApi.Extensions
 
             var error = result.Error ?? string.Empty;
 
-            if (error.StartsWith("Unauthorized", StringComparison.OrdinalIgnoreCase))
-                return controller.Unauthorized(result);
+            var (status, title) = MapStatus(error);
+            var pd = new ProblemDetails
+            {
+                Title = title,
+                Detail = error,
+                Status = status
+            };
+            return new ObjectResult(pd) { StatusCode = status };
+        }
 
-            if (error.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase))
-                return controller.StatusCode(403, result);
-
-            if (error.StartsWith("Conflict", StringComparison.OrdinalIgnoreCase) ||
-                error.IndexOf("duplicidad", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                error.IndexOf("ya existe", StringComparison.OrdinalIgnoreCase) >= 0)
-                return controller.Conflict(result);
-
-            if (error.StartsWith("Unprocessable", StringComparison.OrdinalIgnoreCase))
-                return controller.UnprocessableEntity(result);
-
-            if (error.StartsWith("No encontrado", StringComparison.OrdinalIgnoreCase) ||
-                error.IndexOf("no encontrado", StringComparison.OrdinalIgnoreCase) >= 0)
-                return controller.NotFound(result);
-
-            return controller.BadRequest(result);
+        private static (int Status, string Title) MapStatus(string error)
+        {
+            if (error.StartsWith("Unauthorized", StringComparison.OrdinalIgnoreCase)) return (401, "Unauthorized");
+            if (error.StartsWith("Forbidden", StringComparison.OrdinalIgnoreCase)) return (403, "Forbidden");
+            if (error.StartsWith("Unprocessable", StringComparison.OrdinalIgnoreCase)) return (422, "Unprocessable Entity");
+            if (error.StartsWith("No encontrado", StringComparison.OrdinalIgnoreCase) || error.IndexOf("no encontrado", StringComparison.OrdinalIgnoreCase) >= 0) return (404, "Not Found");
+            if (error.StartsWith("Conflict", StringComparison.OrdinalIgnoreCase) || error.IndexOf("duplicidad", StringComparison.OrdinalIgnoreCase) >= 0 || error.IndexOf("ya existe", StringComparison.OrdinalIgnoreCase) >= 0) return (409, "Conflict");
+            return (400, "Bad Request");
         }
     }
 }

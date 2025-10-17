@@ -124,6 +124,7 @@ namespace Bancalite.Persitence
                 e.Property(x => x.Email).HasMaxLength(200);
 
                 e.HasIndex(x => new { x.TipoDocumentoIdentidadId, x.NumeroDocumento }).IsUnique();
+                e.HasIndex(x => x.Email).IsUnique().HasFilter("\"Email\" IS NOT NULL");
 
                 e.HasOne(x => x.Genero)
                     .WithMany(g => g.Personas)
@@ -149,8 +150,8 @@ namespace Bancalite.Persitence
                     .HasForeignKey<Cliente>(x => x.PersonaId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Rol de autorización se maneja con Identity; opcionalmente indexamos AppUserId
-                e.HasIndex(x => x.AppUserId).IsUnique(false);
+                // AppUserId único cuando no es nulo
+                e.HasIndex(x => x.AppUserId).IsUnique().HasFilter("\"AppUserId\" IS NOT NULL");
             });
 
             // Cuenta

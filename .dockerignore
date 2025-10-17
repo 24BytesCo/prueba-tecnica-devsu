@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+.git/
+.gitignore
+**/*.user
+**/*.suo
+**/*.csproj.user
+**/*.vscode
+**/.idea
+**/.DS_Store
+postgres/
+docs/
+tests/
+README.MD
+

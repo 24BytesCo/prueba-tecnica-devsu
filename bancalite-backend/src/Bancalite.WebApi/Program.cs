@@ -2,6 +2,7 @@ using System.Reflection;
 using Bancalite.Application;
 using Bancalite.Infraestructure;
 using Bancalite.WebApi.Extensions;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,6 +70,9 @@ builder.Services.AddHealthChecks();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+// Configurar licencia de QuestPDF (Community) de forma centralizada
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Middleware personalizado para manejo global de excepciones no controladas
 app.UseMiddleware<Bancalite.WebApi.Middleware.ExceptionMiddleware>();

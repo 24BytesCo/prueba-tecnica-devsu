@@ -44,10 +44,40 @@ namespace Bancalite.Application.Clientes.ClienteCreate
             RuleFor(x => x.clienteCreateRequest.Telefono)
                 .MaximumLength(50).When(x => !string.IsNullOrWhiteSpace(x.clienteCreateRequest.Telefono));
 
-            // Email opcional: si viene, debe tener formato válido
+            // Email obligatorio (se usa para iniciar sesión) y con formato válido
             RuleFor(x => x.clienteCreateRequest.Email)
-                .EmailAddress().WithMessage("Email no es válido")
-                .When(x => !string.IsNullOrWhiteSpace(x.clienteCreateRequest.Email));
+                .NotEmpty().WithMessage("Email es requerido")
+                .Must(email => !string.IsNullOrWhiteSpace(email)).WithMessage("Email es requerido")
+                .EmailAddress().WithMessage("Email no es válido");
+
+            // Unicidad de Email (si se envía): no debe existir en Personas ni debe estar vinculado
+            // a un Cliente a través de un AppUser con ese mismo email
+            RuleFor(x => x.clienteCreateRequest.Email)
+                .MustAsync(async (email, ct) =>
+                {
+                    if (string.IsNullOrWhiteSpace(email)) return false; // ya lo cubre NotEmpty
+                    var mail = email.Trim();
+
+                    // 1) Email en Personas
+                    var personaDup = await _context.Personas.AsNoTracking()
+                        .AnyAsync(p => p.Email != null && p.Email == mail, ct);
+                    if (personaDup) return false;
+
+                    // 2) Email en Users y ya vinculado a un Cliente
+                    var userId = await _context.Users.AsNoTracking()
+                        .Where(u => u.Email == mail)
+                        .Select(u => u.Id)
+                        .FirstOrDefaultAsync(ct);
+                    if (userId != Guid.Empty)
+                    {
+                        var vinculada = await _context.Clientes.AsNoTracking()
+                            .AnyAsync(c => c.AppUserId == userId, ct);
+                        if (vinculada) return false;
+                    }
+
+                    return true;
+                })
+                .WithMessage("El email ya está registrado para otro cliente");
 
             // Password opcional: si viene, longitud mínima
             RuleFor(x => x.clienteCreateRequest.Password)

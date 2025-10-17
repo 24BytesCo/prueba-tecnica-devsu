@@ -51,7 +51,7 @@ namespace Bancalite.Application.Clientes.ClienteCreate
         public string? Telefono { get; set; }
 
         /// <summary>
-        /// Correo electrónico (opcional).
+        /// Correo electrónico (obligatorio). Se usa para iniciar sesión.
         /// </summary>
         public string? Email { get; set; }
 
