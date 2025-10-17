@@ -1,0 +1,152 @@
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Bancalite.Persitence;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace Bancalite.Application.Clientes.ClienteUpdate
+{
+    /// <summary>
+    /// Comandos para actualizar clientes (PUT y PATCH).
+    /// </summary>
+    public class ClienteUpdateCommand
+    {
+        /// <summary>
+        /// PUT: actualización total. Reemplaza todos los campos declarados.
+        /// </summary>
+        /// <param name="Id">Identificador del cliente a actualizar.</param>
+        /// <param name="Request">Contenido a aplicar en la actualización total.</param>
+        public record ClientePutCommandRequest(Guid Id, ClientePutRequest Request) : IRequest<Bancalite.Application.Core.Result<bool>>;
+
+        /// <summary>
+        /// PATCH: actualización parcial. Solo aplica campos presentes.
+        /// </summary>
+        /// <param name="Id">Identificador del cliente a actualizar parcialmente.</param>
+        /// <param name="Request">Campos parciales a aplicar.</param>
+        public record ClientePatchCommandRequest(Guid Id, ClientePatchRequest Request) : IRequest<Bancalite.Application.Core.Result<bool>>;
+
+        internal class PutHandler : IRequestHandler<ClientePutCommandRequest, Bancalite.Application.Core.Result<bool>>
+        {
+            private readonly BancaliteContext _context;
+
+            public PutHandler(BancaliteContext context)
+            {
+                _context = context;
+            }
+
+            /// <summary>
+            /// Aplica actualización total al cliente.
+            /// </summary>
+            /// <param name="request">Id y datos completos del cliente.</param>
+            /// <param name="cancellationToken">Token de cancelación.</param>
+            /// <returns>Resultado indicando éxito o error.</returns>
+            public async Task<Bancalite.Application.Core.Result<bool>> Handle(ClientePutCommandRequest request, CancellationToken cancellationToken)
+            {
+                var cliente = await _context.Clientes
+                    .Include(c => c.Persona)
+                    .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+
+                if (cliente == null)
+                {
+                    return Bancalite.Application.Core.Result<bool>.Failure("Cliente no encontrado");
+                }
+
+                // Validar unicidad de documento si cambió
+                if (cliente.Persona.TipoDocumentoIdentidadId != request.Request.TipoDocumentoIdentidadId
+                    || !string.Equals(cliente.Persona.NumeroDocumento, request.Request.NumeroDocumento, StringComparison.Ordinal))
+                {
+                    var duplicado = await _context.Personas.AsNoTracking().AnyAsync(p =>
+                        p.Id != cliente.PersonaId &&
+                        p.TipoDocumentoIdentidadId == request.Request.TipoDocumentoIdentidadId &&
+                        p.NumeroDocumento == request.Request.NumeroDocumento,
+                        cancellationToken);
+                    if (duplicado)
+                    {
+                        return Bancalite.Application.Core.Result<bool>.Failure("La persona con el documento indicado ya existe");
+                    }
+                }
+
+                // Aplicar cambios
+                var p = cliente.Persona;
+                p.Nombres = request.Request.Nombres.Trim();
+                p.Apellidos = request.Request.Apellidos.Trim();
+                p.Edad = request.Request.Edad;
+                p.GeneroId = request.Request.GeneroId;
+                p.TipoDocumentoIdentidadId = request.Request.TipoDocumentoIdentidadId;
+                p.NumeroDocumento = request.Request.NumeroDocumento.Trim();
+                p.Direccion = string.IsNullOrWhiteSpace(request.Request.Direccion) ? null : request.Request.Direccion.Trim();
+                p.Telefono = string.IsNullOrWhiteSpace(request.Request.Telefono) ? null : request.Request.Telefono.Trim();
+                p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
+
+                cliente.Estado = request.Request.Estado;
+                cliente.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+                return Bancalite.Application.Core.Result<bool>.Success(true);
+            }
+        }
+
+        internal class PatchHandler : IRequestHandler<ClientePatchCommandRequest, Bancalite.Application.Core.Result<bool>>
+        {
+            private readonly BancaliteContext _context;
+
+            public PatchHandler(BancaliteContext context)
+            {
+                _context = context;
+            }
+
+            /// <summary>
+            /// Aplica actualización parcial al cliente.
+            /// </summary>
+            /// <param name="request">Id y campos parciales a actualizar.</param>
+            /// <param name="cancellationToken">Token de cancelación.</param>
+            /// <returns>Resultado indicando éxito o error.</returns>
+            public async Task<Bancalite.Application.Core.Result<bool>> Handle(ClientePatchCommandRequest request, CancellationToken cancellationToken)
+            {
+                var cliente = await _context.Clientes
+                    .Include(c => c.Persona)
+                    .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+
+                if (cliente == null)
+                {
+                    return Bancalite.Application.Core.Result<bool>.Failure("Cliente no encontrado");
+                }
+
+                var p = cliente.Persona;
+
+                // Cambios condicionales
+                if (!string.IsNullOrWhiteSpace(request.Request.Nombres)) p.Nombres = request.Request.Nombres.Trim();
+                if (!string.IsNullOrWhiteSpace(request.Request.Apellidos)) p.Apellidos = request.Request.Apellidos.Trim();
+                if (request.Request.Edad.HasValue) p.Edad = request.Request.Edad.Value;
+                if (request.Request.GeneroId.HasValue) p.GeneroId = request.Request.GeneroId.Value;
+                if (request.Request.TipoDocumentoIdentidadId.HasValue) p.TipoDocumentoIdentidadId = request.Request.TipoDocumentoIdentidadId.Value;
+                if (!string.IsNullOrWhiteSpace(request.Request.NumeroDocumento)) p.NumeroDocumento = request.Request.NumeroDocumento.Trim();
+                if (request.Request.Direccion != null) p.Direccion = string.IsNullOrWhiteSpace(request.Request.Direccion) ? null : request.Request.Direccion.Trim();
+                if (request.Request.Telefono != null) p.Telefono = string.IsNullOrWhiteSpace(request.Request.Telefono) ? null : request.Request.Telefono.Trim();
+                if (request.Request.Email != null) p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
+                if (request.Request.Estado.HasValue) cliente.Estado = request.Request.Estado.Value;
+
+                // Validar unicidad de documento si cambió (si ambos campos están presentes)
+                if (request.Request.TipoDocumentoIdentidadId.HasValue || !string.IsNullOrWhiteSpace(request.Request.NumeroDocumento))
+                {
+                    var tipoId = request.Request.TipoDocumentoIdentidadId ?? p.TipoDocumentoIdentidadId;
+                    var numDoc = !string.IsNullOrWhiteSpace(request.Request.NumeroDocumento) ? request.Request.NumeroDocumento!.Trim() : p.NumeroDocumento;
+                    var duplicado = await _context.Personas.AsNoTracking().AnyAsync(x =>
+                        x.Id != p.Id && x.TipoDocumentoIdentidadId == tipoId && x.NumeroDocumento == numDoc,
+                        cancellationToken);
+                    if (duplicado)
+                    {
+                        return Bancalite.Application.Core.Result<bool>.Failure("La persona con el documento indicado ya existe");
+                    }
+                }
+
+                cliente.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync(cancellationToken);
+                return Bancalite.Application.Core.Result<bool>.Success(true);
+            }
+        }
+    }
+}

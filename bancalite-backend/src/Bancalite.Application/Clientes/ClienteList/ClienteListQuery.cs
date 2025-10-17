@@ -11,19 +11,30 @@ using Microsoft.AspNetCore.Identity;
 namespace Bancalite.Application.Clientes.ClienteList
 {
     /// <summary>
-    /// Query para obtener el listado de clientes.
+    /// Query para obtener el listado de clientes con paginación y filtros básicos.
     /// </summary>
     public class ClienteListQuery
     {
         /// <summary>
-        /// Solicitud para listar clientes (sin filtros por ahora).
+        /// Filtros y paginación para listar clientes.
         /// </summary>
-        public record ClienteListQueryRequest() : IRequest<Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>>;
+        /// <param name="Pagina">Número de página (1-based).</param>
+        /// <param name="Tamano">Tamaño de página (cantidad de registros).</param>
+        /// <param name="Nombres">Filtro por nombre/apellido (contiene) en Persona.</param>
+        /// <param name="NumeroDocumento">Filtro por número de documento (exacto).</param>
+        /// <param name="Estado">Filtro por estado del cliente (true=activo, false=inactivo).</param>
+        public record ClienteListQueryRequest(
+            int Pagina = 1,
+            int Tamano = 10,
+            string? Nombres = null,
+            string? NumeroDocumento = null,
+            bool? Estado = null
+        ) : IRequest<Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>>;
 
         /// <summary>
         /// Manejador de la consulta de clientes.
         /// </summary>
-        internal class Handler : IRequestHandler<ClienteListQueryRequest, Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>> 
+        internal class Handler : IRequestHandler<ClienteListQueryRequest, Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>> 
         {
             private readonly BancaliteContext _context;
 
@@ -33,9 +44,12 @@ namespace Bancalite.Application.Clientes.ClienteList
             }
 
             /// <summary>
-            /// Ejecuta la consulta y retorna la lista de clientes mapeada a DTOs.
+            /// Ejecuta la consulta y retorna la lista de clientes mapeada a DTOs con paginación.
             /// </summary>
-            public async Task<Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
+            /// <param name="request">Parámetros de paginación y filtros.</param>
+            /// <param name="cancellationToken">Token de cancelación.</param>
+            /// <returns>Resultado con elementos y metadatos de paginación.</returns>
+            public async Task<Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -46,6 +60,42 @@ namespace Bancalite.Application.Clientes.ClienteList
                         .ThenInclude(p => p.Genero)
                         .Include(c => c.Persona)
                         .ThenInclude(p => p.TipoDocumentoIdentidad)
+                        .AsQueryable();
+
+                    // Filtros básicos
+                    if (!string.IsNullOrWhiteSpace(request.Nombres))
+                    {
+                        var nombre = request.Nombres.Trim().ToLower();
+                        query = query.Where(c => (c.Persona.Nombres + " " + c.Persona.Apellidos).ToLower().Contains(nombre));
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(request.NumeroDocumento))
+                    {
+                        var ndoc = request.NumeroDocumento.Trim();
+                        query = query.Where(c => c.Persona.NumeroDocumento == ndoc);
+                    }
+
+                    if (request.Estado.HasValue)
+                    {
+                        query = query.Where(c => c.Estado == request.Estado.Value);
+                    }
+
+                    // Total antes de paginar
+                    var total = await query.CountAsync(cancellationToken);
+
+                    // Ordenar por Apellidos, Nombres de manera estable
+                    query = query
+                        .OrderBy(c => c.Persona.Apellidos)
+                        .ThenBy(c => c.Persona.Nombres);
+
+                    // Paginación (1-based)
+                    var pagina = request.Pagina <= 0 ? 1 : request.Pagina;
+                    var tamano = request.Tamano <= 0 ? 10 : request.Tamano;
+                    var skip = (pagina - 1) * tamano;
+
+                    var items = await query
+                        .Skip(skip)
+                        .Take(tamano)
                         .Select(c => new ClienteListItem
                         {
                             ClienteId = c.Id,
@@ -73,16 +123,23 @@ namespace Bancalite.Application.Clientes.ClienteList
                                          join r in _context.Roles on ur.RoleId equals r.Id
                                          where c.AppUserId != null && ur.UserId == c.AppUserId
                                          select r.Name).FirstOrDefault()
-                        });
+                        })
+                        .ToListAsync(cancellationToken);
 
-                    // Ejecutar y retornar
-                    var data = await query.ToListAsync(cancellationToken);
-                    IReadOnlyList<ClienteListItem> ro = data; return Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>.Success(ro);
+                    var paged = new Bancalite.Application.Core.Paged<ClienteListItem>
+                    {
+                        Items = items,
+                        Total = total,
+                        Pagina = pagina,
+                        Tamano = tamano
+                    };
+
+                    return Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>.Success(paged);
                 }
                 catch (Exception ex)
                 {
                     // Error inesperado al consultar
-                    return Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>.Failure("No se pudo obtener el listado de clientes");
+                    return Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>.Failure("No se pudo obtener el listado de clientes");
                 }
             }
         }

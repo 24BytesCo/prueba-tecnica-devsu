@@ -14,6 +14,13 @@ using Bancalite.Application.Auth.Refresh;
 using Bancalite.Application.Auth.Logout;
 using Bancalite.Application.Auth.Me;
 using Microsoft.AspNetCore.Authorization;
+using Bancalite.Application.Core;
+using Bancalite.Application.Auth;
+using static Bancalite.Application.Auth.Refresh.RefreshTokenCommand;
+using static Bancalite.Application.Auth.Logout.LogoutCommand;
+using static Bancalite.Application.Auth.Me.MeQuery;
+using static Bancalite.Application.Auth.ResetPassword.ResetPasswordCommand;
+using static Bancalite.Application.Auth.ForgotPassword.ForgotPasswordCommand;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -33,7 +40,7 @@ namespace Bancalite.WebApi.Controllers
         //login
         [HttpPost("login")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Bancalite.Application.Auth.Profile>>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult<Result<Profile>>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
             var command = new LoginCommandRequest(request);
 
@@ -50,7 +57,7 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="redirectBaseUrl">URL base del front para armar el link (ej: https://app/reset-password).</param>
         [HttpPost("forgot-password")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Bancalite.Application.Auth.ForgotPassword.ForgotPasswordCommand.ForgotPasswordResponse>>> ForgotPassword([FromQuery] string email, [FromQuery] string redirectBaseUrl)
+        public async Task<ActionResult<Result<ForgotPasswordCommand.ForgotPasswordResponse>>> ForgotPassword([FromQuery] string email, [FromQuery] string redirectBaseUrl)
         {
             var req = new ForgotPasswordRequest
             {
@@ -58,7 +65,7 @@ namespace Bancalite.WebApi.Controllers
                 RedirectBaseUrl = redirectBaseUrl,
                 IncludeDebug = _env.IsDevelopment()
             };
-            var result = await _iSender.Send(new ForgotPasswordCommand.ForgotPasswordCommandRequest(req));
+            var result = await _iSender.Send(new ForgotPasswordCommandRequest(req));
             if (!result.IsSuccess)
             {
                 if (string.Equals(result.Error, "Unauthorized", StringComparison.OrdinalIgnoreCase))
@@ -74,10 +81,10 @@ namespace Bancalite.WebApi.Controllers
         [HttpPost("reset-password")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<bool>>> ResetPassword([FromQuery] string email, [FromQuery] string token, [FromQuery] string newPassword)
+        public async Task<ActionResult<Result<bool>>> ResetPassword([FromQuery] string email, [FromQuery] string token, [FromQuery] string newPassword)
         {
             var req = new ResetPasswordRequest { Email = email, Token = token, NewPassword = newPassword };
-            var result = await _iSender.Send(new ResetPasswordCommand.ResetPasswordCommandRequest(req));
+            var result = await _iSender.Send(new ResetPasswordCommandRequest(req));
             if (!result.IsSuccess)
             {
                 if (string.Equals(result.Error, "Unauthorized", StringComparison.OrdinalIgnoreCase))
@@ -92,10 +99,10 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpPost("refresh")]
         [AllowAnonymous]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Bancalite.Application.Auth.Profile>>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult<Result<Profile>>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
-            var result = await _iSender.Send(new RefreshTokenCommand.RefreshTokenCommandRequest(request), cancellationToken);
-            return result.IsSuccess ? Ok(result) : Unauthorized(result);
+            var result = await _iSender.Send(new RefreshTokenCommandRequest(request), cancellationToken);
+            return result.IsSuccess ? Ok(result.Datos) : Unauthorized(result);
         }
 
         /// <summary>
@@ -103,9 +110,9 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpPost("logout")]
         [AllowAnonymous]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<bool>>> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult<Result<bool>>> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
-            var result = await _iSender.Send(new LogoutCommand.LogoutCommandRequest(request.RefreshToken), cancellationToken);
+            var result = await _iSender.Send(new LogoutCommandRequest(request.RefreshToken), cancellationToken);
             return result.IsSuccess ? Ok(result) : Unauthorized(result);
         }
 
@@ -114,9 +121,9 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpGet("me")]
         [Authorize]
-        public async Task<ActionResult<Bancalite.Application.Core.Result<Bancalite.Application.Auth.Profile>>> Me(CancellationToken cancellationToken)
+        public async Task<ActionResult<Result<Profile>>> Me(CancellationToken cancellationToken)
         {
-            var result = await _iSender.Send(new MeQuery.MeQueryRequest(), cancellationToken);
+            var result = await _iSender.Send(new MeQueryRequest(), cancellationToken);
             return result.IsSuccess ? Ok(result) : Unauthorized(result);
         }
     }
