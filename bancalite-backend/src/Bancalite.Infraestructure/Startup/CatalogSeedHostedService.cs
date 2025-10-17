@@ -5,6 +5,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Npgsql;
+using System.Data.Common;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,15 +31,102 @@ public class CatalogSeedHostedService : IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        using var scope = _services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BancaliteContext>();
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+        // 0) Si el proveedor no es relacional (InMemory en pruebas), omitir chequeos/migraciones
+        var esRelacional = db.Database.IsRelational();
+        if (esRelacional)
+        {
+            bool puedeConectar = false;
+            try
+            {
+                puedeConectar = await db.Database.CanConnectAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo conectar a la base de datos. Se omiten migraciones y seed.");
+            }
+            if (!puedeConectar)
+            {
+                _logger.LogWarning("Base de datos no disponible; se omiten migraciones y seed en este arranque.");
+                return;
+            }
+        }
+
+        // 1) Migraciones (tolerantes en cualquier entorno con pre-chequeo)
         try
         {
-            using var scope = _services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<BancaliteContext>();
-            var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            // Pre-chequeo: si existe esquema pero no historial de migraciones, omitir Migrate()
+            var shouldMigrate = true;
+            if (esRelacional)
+            {
+                // Usar una conexión NUEVA para no disponer la que EF administra internamente
+                var connectionString = db.Database.GetConnectionString();
+                await using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    await conn.OpenAsync(cancellationToken);
+                    // ¿Existen tablas señal (esquema ya creado)? Roles, Users o personas
+                    await using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "select to_regclass('public.\"AspNetRoles\"') is not null";
+                        var existsRoles = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
 
-            _logger.LogInformation("Aplicando migraciones de base de datos...");
-            await db.Database.MigrateAsync(cancellationToken);
+                        cmd.CommandText = "select to_regclass('public.\"AspNetUsers\"') is not null";
+                        var existsUsers = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
 
+                        cmd.CommandText = "select to_regclass('public.personas') is not null";
+                        var existsPersonas = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        // ¿Existe el historial de migraciones?
+                        cmd.CommandText = "select to_regclass('public.\"__EFMigrationsHistory\"') is not null";
+                        var existsHistoryTable = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        // Si hay tabla de historial, consultar número de filas aplicadas
+                        long appliedCount = -1;
+                        if (existsHistoryTable)
+                        {
+                            cmd.CommandText = "select count(*) from \"__EFMigrationsHistory\"";
+                            var obj = await cmd.ExecuteScalarAsync(cancellationToken);
+                            if (obj != null && obj != DBNull.Value)
+                            {
+                                appliedCount = Convert.ToInt64(obj);
+                            }
+                        }
+
+                        // Si ya existe esquema clave, evitamos ejecutar Migrate (evita intentos de CREATE duplicados)
+                        if (existsRoles || existsUsers || existsPersonas)
+                        {
+                            shouldMigrate = false;
+                            _logger.LogWarning("Esquema existente detectado (tablas clave presentes). Se omite Migrate().");
+                        }
+                    }
+                }
+
+                if (shouldMigrate)
+                {
+                    _logger.LogInformation("Aplicando migraciones de base de datos...");
+                    await db.Database.MigrateAsync(cancellationToken);
+                }
+            }
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("PendingModelChangesWarning", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Omitiendo migraciones por cambios pendientes de modelo: {Mensaje}", ex.Message);
+        }
+        catch (PostgresException ex) when (ex.SqlState == "42P07") // relation already exists
+        {
+            _logger.LogWarning("Esquema existente detectado. Omitiendo migraciones: {Mensaje}", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error aplicando migraciones. Continúa el arranque en Development.");
+        }
+
+        // 2) Seed de catálogos/roles/usuario admin (best-effort)
+        try
+        {
             _logger.LogInformation("Sembrando catálogos si están vacíos...");
             await db.SeedCatalogosAsync(cancellationToken);
 
@@ -117,8 +206,7 @@ public class CatalogSeedHostedService : IHostedService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error durante migración/siembra de catálogos");
-            // Re-lanzar no es deseable en dev; se continúa para permitir el arranque.
+            _logger.LogError(ex, "Error durante siembra de datos. La aplicación continúa ejecutándose.");
         }
     }
 

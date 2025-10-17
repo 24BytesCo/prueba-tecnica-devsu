@@ -70,6 +70,9 @@ builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
+// Middleware personalizado para manejo global de excepciones no controladas
+app.UseMiddleware<Bancalite.WebApi.Middleware.ExceptionMiddleware>();
+
 // Swagger UI en entorno de desarrollo
 if (app.Environment.IsDevelopment())
 {
