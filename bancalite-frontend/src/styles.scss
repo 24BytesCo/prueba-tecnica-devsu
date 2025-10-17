@@ -1,0 +1,28 @@
+:root {
+  --brand-color: #1a3a74;
+  --sidebar-bg: #fafafa;
+  --accent: #f6d726;
+}
+
+html, body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Arial, sans-serif;
+  color: #222;
+}
+
+.brand {
+  color: var(--brand-color);
+}
+
+.container {
+  padding: 1rem 1.5rem;
+}
+
+/* layout helpers */
+.row { display: flex; gap: 1rem; align-items: center; }
+.spacer { flex: 1; }
+

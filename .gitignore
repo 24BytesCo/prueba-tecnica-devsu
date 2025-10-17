@@ -84,6 +84,15 @@ temp/
 .env
 .env.*
 
+# Angular (frontend específico)
+bancalite-frontend/node_modules/
+bancalite-frontend/dist/
+bancalite-frontend/coverage/
+bancalite-frontend/.angular/
+# Archivos locales de entorno/proxy en FE
+bancalite-frontend/src/environments/environment.local.ts
+bancalite-frontend/proxy.conf.local.json
+
 # Docker (archivos locales)
 .dockerignore.local
 docker-compose.override.yml
