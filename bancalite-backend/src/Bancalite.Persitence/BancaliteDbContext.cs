@@ -185,6 +185,7 @@ namespace Bancalite.Persitence
                 e.Property(x => x.SaldoPosterior).HasPrecision(18, 2);
                 e.Property(x => x.Descripcion).HasMaxLength(250);
                 e.Property(x => x.CreatedBy).HasMaxLength(100);
+                e.Property(x => x.IdempotencyKey).HasMaxLength(100);
 
                 e.HasOne(x => x.Cuenta)
                     .WithMany(c => c.Movimientos)
@@ -197,6 +198,8 @@ namespace Bancalite.Persitence
                     .OnDelete(DeleteBehavior.Restrict);
 
                 e.HasIndex(x => new { x.CuentaId, x.Fecha });
+                // Unicidad por idempotencia (cuando se usa)
+                e.HasIndex(x => new { x.CuentaId, x.IdempotencyKey }).IsUnique().HasFilter("\"IdempotencyKey\" IS NOT NULL");
             });
         }
 

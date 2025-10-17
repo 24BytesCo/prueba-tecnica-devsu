@@ -50,6 +50,11 @@ public static class DependencyInjection
             .Bind(config.GetSection("Auth"))
             .Validate(o => o.RefreshDays > 0, "Auth:RefreshDays debe ser > 0");
 
+        // Opciones de Movimientos (tope diario, redondeo)
+        services.AddOptions<MovimientosOptions>()
+            .Bind(config.GetSection("Movimientos"))
+            .Validate(o => o.TopeDiario >= 0, "Movimientos:TopeDiario debe ser >= 0");
+
         // Servicios de seguridad / tokens
         services.AddScoped<ITokenService, TokenService>();
         services.AddHttpContextAccessor();

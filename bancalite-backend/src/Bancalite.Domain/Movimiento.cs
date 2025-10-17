@@ -15,6 +15,9 @@ public class Movimiento : BaseEntity
     public decimal SaldoPrevio { get; set; }
     public decimal SaldoPosterior { get; set; }
 
+    // Idempotencia opcional por operación (clave única por cuenta)
+    public string? IdempotencyKey { get; set; }
+
     public string? Descripcion { get; set; }
     public string? CreatedBy { get; set; }
 }
