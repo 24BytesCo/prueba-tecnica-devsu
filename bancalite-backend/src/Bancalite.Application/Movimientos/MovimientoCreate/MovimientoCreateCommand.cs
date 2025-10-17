@@ -123,8 +123,12 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
                     }
                 }
 
-                // Transacción para consistencia
-                await using var tx = await _context.Database.BeginTransactionAsync(ct);
+                // Transacción para consistencia (solo en proveedores relacionales)
+                Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction? tx = null;
+                if (_context.Database.IsRelational())
+                {
+                    tx = await _context.Database.BeginTransactionAsync(ct);
+                }
 
                 // Recalcular saldos dentro de la transacción
                 await _context.Entry(cuenta).ReloadAsync(ct); // refrescar fila
@@ -175,7 +179,10 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
 
                 await _context.Movimientos.AddAsync(movimiento, ct);
                 await _context.SaveChangesAsync(ct);
-                await tx.CommitAsync(ct);
+                if (tx != null)
+                {
+                    await tx.CommitAsync(ct);
+                }
 
                 // DTO de salida
                 var dto = new MovimientoDto
@@ -194,4 +201,3 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
         }
     }
 }
-
