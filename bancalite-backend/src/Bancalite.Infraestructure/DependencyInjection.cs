@@ -58,6 +58,10 @@ public static class DependencyInjection
             .Bind(config.GetSection("Movimientos"))
             .Validate(o => o.TopeDiario >= 0, "Movimientos:TopeDiario debe ser >= 0");
 
+        // Opciones de Reportes (branding / colores)
+        services.AddOptions<ReportOptions>()
+            .Bind(config.GetSection("Report"));
+
         // Servicios de seguridad / tokens
         services.AddScoped<ITokenService, TokenService>();
         services.AddHttpContextAccessor();

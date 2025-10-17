@@ -47,6 +47,12 @@ Backend de Bancalite construido con ASP.NET Core (net9), EF Core (PostgreSQL), I
 - `JWT:Key`: clave simétrica (mínimo 32 chars)
 - `JWT:Issuer`, `JWT:Audience`, `JWT:ExpiresMinutes`
 
+### Report (branding PDF)
+
+- `Report:BrandName`: nombre que aparece en el encabezado del PDF (p. ej., "Bancalite").
+- `Report:AccentColor`: color acento en formato HEX (p. ej., `#F44336`).
+- `Report:LogoPath`: reservado para futuro uso de logotipo.
+
 ### SMTP (IEmailSender)
 
 - `Smtp:Host`, `Smtp:Port`, `Smtp:EnableSsl`, `Smtp:Username`, `Smtp:Password`, `Smtp:SenderEmail`, `Smtp:SenderName`
@@ -75,6 +81,37 @@ Backend de Bancalite construido con ASP.NET Core (net9), EF Core (PostgreSQL), I
 2. Ajusta `ConnectionStrings:Default` para apuntar a `localhost:5432`
 3. Ejecuta la API como arriba
 
+### Docker (API + Postgres)
+
+En la raíz del repo:
+
+1) Prepara variables
+
+```bash
+cp .env.example .env
+# edita DB_USER y DB_PASSWORD
+```
+
+2) Levanta servicios (build + run)
+
+```bash
+docker compose up -d --build
+```
+
+3) Verifica
+
+- Health: `http://localhost:8080/health`
+- Swagger: `http://localhost:8080/swagger`
+- Logs: `docker compose logs -f api`
+
+Notas
+- El servicio `api` usa la cadena `ConnectionStrings__Default` interna (`Host=db;Port=5432;...;SSL Mode=Disable`).
+- En Development aplica migraciones y seed inicial (roles y admin).
+- Admin por defecto (si no configuras `ADMIN_*`): `admin@bancalite.local` / `Admin123$`.
+
+Puertos
+- API: `8080` (puedes cambiarlo con `API_PORT` en `.env`).
+
 ## Migraciones y base de datos
 
 - En Development, `CatalogSeedHostedService` aplica migraciones al arrancar y siembra catálogos/roles/usuario admin
@@ -93,6 +130,9 @@ dotnet ef database update -p src/Bancalite.Persitence -s src/Bancalite.WebApi
 - Creación de clientes: `POST /api/clientes` requiere rol `Admin`
   
 Nota sobre roles: la verificación de rol usa primero los claims del token (por ejemplo, `role=Admin`). Si el claim no está presente, se valida contra los roles en Identity (base de datos).
+
+Errores y validaciones
+- El API devuelve errores en formato `ProblemDetails` estándar (400/401/403/404/409/422) con `title`, `status` y `detail`.
 
 ## Cuentas (API)
 
@@ -187,7 +227,7 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
 - CRUD Clientes: implementado (con seguridad Admin para crear y propietario/admin para consultar/actualizar/borrar).
 - CRUD Cuentas: implementado con reglas y roles anteriores.
 - Movimientos: implementado (créditos/débitos, tope diario, sobregiro, idempotencia, listado por fechas).
-- Reporte de estado de cuenta (JSON y PDF): implementado. El PDF se entrega como `application/pdf` con nombre de archivo y paginación básica.
+- Reporte de estado de cuenta (JSON y PDF): implementado con QuestPDF (licencia Community). PDF con encabezado, tabla estilo extracto, importes con formato regional y opción de branding por `Report:*`.
 
 ## Testing
 
@@ -238,10 +278,10 @@ Endpoints del reporte de estado de cuenta (JSON y PDF):
     - 404 si no hay datos/entidades encontradas.
 
 - `GET /api/reportes/pdf?clienteId|numeroCuenta&desde&hasta`
-  - Renderiza el mismo dataset en PDF (paridad con JSON garantizada al compartir DTO).
-  - Encabezados de respuesta: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="reporte-estado-cuenta-<timestamp>.pdf"`.
-  - Paginación en PDF: cabecera por página + tabla de movimientos; se parte automáticamente el detalle para listas largas.
-  - Plantilla simple con fuente estándar (Helvetica).
+  - Renderiza el mismo dataset en PDF con QuestPDF (Community). 
+  - Encabezados: `Content-Type: application/pdf` y `Content-Disposition` con nombre basado en timestamp.
+  - Paginación automática de tabla; importes con `es-ES` y débitos en rojo.
+  - Branding configurable vía `Report:BrandName` y color con `Report:AccentColor`.
 
 Notas de cálculo
 - Los totales se agregan sobre el rango `[desde, hasta]` en UTC.
@@ -251,6 +291,13 @@ Errores y códigos (JSON/PDF)
 - 400: validación de filtros/rango.
 - 401/403: autenticación/autorización.
 - 404: cliente/cuenta inexistente o sin datos.
+
+Colección Postman
+- Archivo: `Bancalite.postman_collection.json` (raíz). Incluye flujo Auth, Clientes, Cuentas, Movimientos y Reportes (JSON/PDF) con variables.
+
+Importar en Postman
+- File → Import → File → selecciona `Bancalite.postman_collection.json`.
+- Configura variables `baseUrl`, `admin_email`/`admin_password` y ejecuta la request “Login (Admin)”.
 
 ## Migraciones
 
@@ -276,6 +323,30 @@ dotnet ef database update \
 ```
 
 - Si la base ya tenía tablas (por ejemplo Identity) pero el historial de migraciones está vacío, puede ser necesario hacer un “baseline” del primer snapshot y luego aplicar las migraciones nuevas. En desarrollo, como alternativa rápida, recrear la base de datos evita inconsistencias.
+- Índices recomendados (incluidos en el modelo actual):
+  - `personas(email)` único filtrado `IS NOT NULL`.
+  - `clientes(app_user_id)` único filtrado `IS NOT NULL`.
+
+## CI/CD (GitHub Actions + Imágenes)
+
+- Workflow: `.github/workflows/ci-docker.yml`.
+- Disparadores: PR hacia `main` (test + build), push a `main` (test + build + push de imagen).
+- Publicación de imágenes:
+  - GHCR: `ghcr.io/<owner>/<repo>` (tags: `latest`, `main`, `vX.Y.Z`, `X.Y`, `X`, `sha` corto y por rama).
+  - Docker Hub: `docker.io/24bytes/bancalite-api` (mismos tags). Requiere secretos `DOCKERHUB_USERNAME` y `DOCKERHUB_TOKEN`.
+- Para que el paquete GHCR sea público: Repo → Packages → contenedor → Package settings → Change visibility → Public.
+
+Pull de ejemplo
+```bash
+docker pull 24bytes/bancalite-api:latest
+# o, desde GHCR (sustituye owner/repo):
+docker pull ghcr.io/<owner>/<repo>:latest
+```
+
+## Codificación y estilo
+
+- El repositorio usa UTF‑8 (archivo `.editorconfig`). Si ves caracteres extraños, guarda el archivo con “Save with Encoding → UTF‑8”.
+- Mantener mensajes de error públicos sin PII; el API retorna `ProblemDetails` para errores.
 
 ## Solución de problemas
 

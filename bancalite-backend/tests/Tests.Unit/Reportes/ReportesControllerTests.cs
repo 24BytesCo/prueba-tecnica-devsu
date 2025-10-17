@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Tests.Unit.Reportes;
 
 /// <summary>
-/// Pruebas de integraciÃƒÂ³n del mÃƒÂ³dulo Reportes (JSON y PDF).
+/// Pruebas de integración del módulo Reportes (JSON y PDF).
 /// </summary>
 public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
 {
@@ -29,8 +29,8 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         if (!db.TiposMovimiento.Any())
         {
             db.TiposMovimiento.AddRange(
-                new TipoMovimiento { Id = Guid.NewGuid(), Codigo = "CRE", Nombre = "CrÃƒÂ©dito", Activo = true },
-                new TipoMovimiento { Id = Guid.NewGuid(), Codigo = "DEB", Nombre = "DÃƒÂ©bito", Activo = true }
+                new TipoMovimiento { Id = Guid.NewGuid(), Codigo = "CRE", Nombre = "Crédito", Activo = true },
+                new TipoMovimiento { Id = Guid.NewGuid(), Codigo = "DEB", Nombre = "Débito", Activo = true }
             );
             await db.SaveChangesAsync();
         }
@@ -65,7 +65,7 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         var resp = await _client.SendAsync(msg);
         resp.EnsureSuccessStatusCode();
         var created = await resp.Content.ReadFromJsonAsync<ApiResult<Guid>>();
-        // Ajuste: asegurar vÃƒÂ­nculo con el usuario creado (propietario)
+        // Ajuste: asegurar vínculo con el usuario creado (propietario)
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<BancaliteContext>();
@@ -157,7 +157,7 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         dto.Movimientos.Count.Should().Be(3);
     }
 
-    // JSON: reporte por nÃƒÂºmero de cuenta
+    // JSON: reporte por número de cuenta
     [Fact(DisplayName = "Reporte JSON por cuenta -> totales correctos")]
     public async Task Json_Cuenta_Ok()
     {
@@ -198,7 +198,7 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    [Fact(DisplayName = "Reporte JSON con rango invÃƒÂ¡lido -> 400")]
+    [Fact(DisplayName = "Reporte JSON con rango inválido -> 400")]
     public async Task Json_RangoInvalido_400()
     {
         var desde = DateTime.UtcNow.Date;
@@ -230,7 +230,7 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
     }
 
     // JSON: 404
-    [Fact(DisplayName = "Reporte JSON nÃƒÂºmero inexistente -> 404")]
+    [Fact(DisplayName = "Reporte JSON número inexistente -> 404")]
     public async Task Json_NoDatos_404()
     {
         var desde = DateTime.UtcNow.Date;
@@ -242,8 +242,8 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         res.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    // PDF: cabeceras y no vacÃƒÂ­o
-    [Fact(DisplayName = "Reporte PDF por cuenta -> headers correctos y no vacÃƒÂ­o")]
+    // PDF: cabeceras y no vacío
+    [Fact(DisplayName = "Reporte PDF por cuenta -> headers correctos y no vacío")]
     public async Task Pdf_Ok_Headers()
     {
         await SeedTiposMovimientoAsync();
@@ -265,8 +265,8 @@ public class ReportesControllerTests : IClassFixture<ReportesWebApiFactory>
         bytes.Length.Should().BeGreaterThan(200);
     }
 
-    // PDF: paginaciÃƒÂ³n
-    [Fact(DisplayName = "Reporte PDF con muchos movimientos -> tamaÃƒÂ±o mayor (paginaciÃƒÂ³n)")]
+    // PDF: paginación
+    [Fact(DisplayName = "Reporte PDF con muchos movimientos -> tamaño mayor (paginación)")]
     public async Task Pdf_Paginacion_TamanoMayor()
     {
         await SeedTiposMovimientoAsync();

@@ -1,4 +1,5 @@
 using Bancalite.Application.Interface;
+using Bancalite.Application.Config;
 using Bancalite.Application.Reportes.EstadoCuenta;
 using System.Globalization;
 using QuestPDF.Fluent;
@@ -12,14 +13,20 @@ namespace Bancalite.Infraestructure.Report
     /// </summary>
     public class PdfRenderer : IPdfRenderer
     {
+        private readonly string _brand;
+        private readonly string _accent;
+
+        public PdfRenderer(Microsoft.Extensions.Options.IOptions<ReportOptions> options)
+        {
+            _brand = string.IsNullOrWhiteSpace(options.Value.BrandName) ? "Bancalite" : options.Value.BrandName!;
+            _accent = string.IsNullOrWhiteSpace(options.Value.AccentColor) ? Colors.Red.Medium : options.Value.AccentColor!;
+        }
+
         public Task<byte[]> RenderEstadoCuentaAsync(object reporteDto, CancellationToken ct = default)
         {
-            // Configurar licencia Community (gratuita) de QuestPDF para desactivar validación
-            QuestPDF.Settings.License = LicenseType.Community;
-
             var dto = (EstadoCuentaDto)reporteDto;
 
-            var accent = Colors.Red.Medium; // estilo bancario
+            var accent = _accent; // estilo bancario
             var softHeader = Colors.Grey.Lighten4;
             var lightText = Colors.Grey.Darken2;
             var culture = new CultureInfo("es-ES");
@@ -53,6 +60,7 @@ namespace Bancalite.Infraestructure.Report
                                 col.Item().Element(BoxCuenta);
                             });
                         });
+                        h.Item().AlignRight().Text(_brand).FontColor(lightText);
                     });
 
                     page.Content().PaddingTop(10).Column(col =>
@@ -133,6 +141,13 @@ namespace Bancalite.Infraestructure.Report
                             IContainer CellBg(IContainer c, string background) => c.Background(background).Padding(5).BorderBottom(0.5f);
 
                             // Filas
+                            string Trunc(string? s, int len)
+                            {
+                                if (string.IsNullOrWhiteSpace(s)) return string.Empty;
+                                var v = s.Trim();
+                                return v.Length <= len ? v : v.Substring(0, len - 1) + "…";
+                            }
+
                             var odd = true;
                             if (dto.Movimientos.Count == 0)
                             {
@@ -150,7 +165,8 @@ namespace Bancalite.Infraestructure.Report
 
                                     var importe = (m.TipoCodigo?.ToUpperInvariant() == "DEB" ? -m.Monto : m.Monto);
                                     table.Cell().Element(c => CellBg(c, bg)).Text(m.Fecha.ToString("dd.MM.yyyy"));
-                                    table.Cell().Element(c => CellBg(c, bg)).Text(string.IsNullOrWhiteSpace(m.Descripcion) ? m.NumeroCuenta : m.Descripcion);
+                                    var concepto = string.IsNullOrWhiteSpace(m.Descripcion) ? m.NumeroCuenta : m.Descripcion;
+                                    table.Cell().Element(c => CellBg(c, bg)).Text(Trunc(concepto, 60));
                                     table.Cell().Element(c => CellBg(c, bg)).Text((m.TipoCodigo ?? string.Empty).ToUpperInvariant());
                                     table.Cell().Element(c => CellBg(c, bg)).AlignRight().Text(F(importe)).FontColor(importe < 0 ? Colors.Red.Darken2 : Colors.Grey.Darken3);
                                     table.Cell().Element(c => CellBg(c, bg)).AlignRight().Text(F(m.SaldoPosterior));
