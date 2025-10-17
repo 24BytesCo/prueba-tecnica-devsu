@@ -2,10 +2,12 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Bancalite.Application.Core;
 using Bancalite.Persitence;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Bancalite.Application.Interface;
 
 namespace Bancalite.Application.Clientes.ClienteUpdate
 {
@@ -19,22 +21,24 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
         /// </summary>
         /// <param name="Id">Identificador del cliente a actualizar.</param>
         /// <param name="Request">Contenido a aplicar en la actualización total.</param>
-        public record ClientePutCommandRequest(Guid Id, ClientePutRequest Request) : IRequest<Bancalite.Application.Core.Result<bool>>;
+        public record ClientePutCommandRequest(Guid Id, ClientePutRequest Request) : IRequest<Result<bool>>;
 
         /// <summary>
         /// PATCH: actualización parcial. Solo aplica campos presentes.
         /// </summary>
         /// <param name="Id">Identificador del cliente a actualizar parcialmente.</param>
         /// <param name="Request">Campos parciales a aplicar.</param>
-        public record ClientePatchCommandRequest(Guid Id, ClientePatchRequest Request) : IRequest<Bancalite.Application.Core.Result<bool>>;
+        public record ClientePatchCommandRequest(Guid Id, ClientePatchRequest Request) : IRequest<Result<bool>>;
 
-        internal class PutHandler : IRequestHandler<ClientePutCommandRequest, Bancalite.Application.Core.Result<bool>>
+        internal class PutHandler : IRequestHandler<ClientePutCommandRequest, Result<bool>>
         {
             private readonly BancaliteContext _context;
+            private readonly IUserAccessor _userAccessor;
 
-            public PutHandler(BancaliteContext context)
+            public PutHandler(BancaliteContext context, IUserAccessor userAccessor)
             {
                 _context = context;
+                _userAccessor = userAccessor;
             }
 
             /// <summary>
@@ -43,7 +47,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
             /// <param name="request">Id y datos completos del cliente.</param>
             /// <param name="cancellationToken">Token de cancelación.</param>
             /// <returns>Resultado indicando éxito o error.</returns>
-            public async Task<Bancalite.Application.Core.Result<bool>> Handle(ClientePutCommandRequest request, CancellationToken cancellationToken)
+            public async Task<Result<bool>> Handle(ClientePutCommandRequest request, CancellationToken cancellationToken)
             {
                 var cliente = await _context.Clientes
                     .Include(c => c.Persona)
@@ -51,7 +55,24 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
 
                 if (cliente == null)
                 {
-                    return Bancalite.Application.Core.Result<bool>.Failure("Cliente no encontrado");
+                    return Result<bool>.Failure("Cliente no encontrado");
+                }
+
+                // Autorización: si no es Admin, sólo su propio cliente
+                var identidad = _userAccessor.GetUsername();
+                if (string.IsNullOrWhiteSpace(identidad)) return Result<bool>.Failure("Unauthorized");
+                var esAdmin = await (from ur in _context.UserRoles
+                                     join r in _context.Roles on ur.RoleId equals r.Id
+                                     join u in _context.Users on ur.UserId equals u.Id
+                                     where (u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad) && r.Name == "Admin"
+                                     select ur).AnyAsync(cancellationToken);
+                if (!esAdmin)
+                {
+                    var userId = await _context.Users.AsNoTracking()
+                        .Where(u => u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad)
+                        .Select(u => u.Id).FirstOrDefaultAsync(cancellationToken);
+                    if (cliente.AppUserId == null || cliente.AppUserId != userId)
+                        return Result<bool>.Failure("Forbidden");
                 }
 
                 // Validar unicidad de documento si cambió
@@ -65,7 +86,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                         cancellationToken);
                     if (duplicado)
                     {
-                        return Bancalite.Application.Core.Result<bool>.Failure("La persona con el documento indicado ya existe");
+                        return Result<bool>.Failure("La persona con el documento indicado ya existe");
                     }
                 }
 
@@ -85,17 +106,19 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                 cliente.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync(cancellationToken);
-                return Bancalite.Application.Core.Result<bool>.Success(true);
+                return Result<bool>.Success(true);
             }
         }
 
-        internal class PatchHandler : IRequestHandler<ClientePatchCommandRequest, Bancalite.Application.Core.Result<bool>>
+        internal class PatchHandler : IRequestHandler<ClientePatchCommandRequest, Result<bool>>
         {
             private readonly BancaliteContext _context;
+            private readonly IUserAccessor _userAccessor;
 
-            public PatchHandler(BancaliteContext context)
+            public PatchHandler(BancaliteContext context, IUserAccessor userAccessor)
             {
                 _context = context;
+                _userAccessor = userAccessor;
             }
 
             /// <summary>
@@ -104,7 +127,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
             /// <param name="request">Id y campos parciales a actualizar.</param>
             /// <param name="cancellationToken">Token de cancelación.</param>
             /// <returns>Resultado indicando éxito o error.</returns>
-            public async Task<Bancalite.Application.Core.Result<bool>> Handle(ClientePatchCommandRequest request, CancellationToken cancellationToken)
+            public async Task<Result<bool>> Handle(ClientePatchCommandRequest request, CancellationToken cancellationToken)
             {
                 var cliente = await _context.Clientes
                     .Include(c => c.Persona)
@@ -112,7 +135,24 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
 
                 if (cliente == null)
                 {
-                    return Bancalite.Application.Core.Result<bool>.Failure("Cliente no encontrado");
+                    return Result<bool>.Failure("Cliente no encontrado");
+                }
+
+                // Autorización: si no es Admin, sólo su propio cliente
+                var identidad = _userAccessor.GetUsername();
+                if (string.IsNullOrWhiteSpace(identidad)) return Result<bool>.Failure("Unauthorized");
+                var esAdmin = await (from ur in _context.UserRoles
+                                     join r in _context.Roles on ur.RoleId equals r.Id
+                                     join u in _context.Users on ur.UserId equals u.Id
+                                     where (u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad) && r.Name == "Admin"
+                                     select ur).AnyAsync(cancellationToken);
+                if (!esAdmin)
+                {
+                    var userId = await _context.Users.AsNoTracking()
+                        .Where(u => u.Email == identidad || u.UserName == identidad || u.Id.ToString() == identidad)
+                        .Select(u => u.Id).FirstOrDefaultAsync(cancellationToken);
+                    if (cliente.AppUserId == null || cliente.AppUserId != userId)
+                        return Result<bool>.Failure("Forbidden");
                 }
 
                 var p = cliente.Persona;
@@ -139,13 +179,13 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                         cancellationToken);
                     if (duplicado)
                     {
-                        return Bancalite.Application.Core.Result<bool>.Failure("La persona con el documento indicado ya existe");
+                        return Result<bool>.Failure("La persona con el documento indicado ya existe");
                     }
                 }
 
                 cliente.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync(cancellationToken);
-                return Bancalite.Application.Core.Result<bool>.Success(true);
+                return Result<bool>.Success(true);
             }
         }
     }

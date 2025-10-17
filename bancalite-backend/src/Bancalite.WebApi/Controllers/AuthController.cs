@@ -21,6 +21,7 @@ using static Bancalite.Application.Auth.Logout.LogoutCommand;
 using static Bancalite.Application.Auth.Me.MeQuery;
 using static Bancalite.Application.Auth.ResetPassword.ResetPasswordCommand;
 using static Bancalite.Application.Auth.ForgotPassword.ForgotPasswordCommand;
+using Bancalite.WebApi.Extensions;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -43,11 +44,8 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<Result<Profile>>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
         {
             var command = new LoginCommandRequest(request);
-
             var response = await _iSender.Send(command, cancellationToken);
-
-            return response.IsSuccess ? Ok(response.Datos)
-                : Unauthorized();
+            return this.FromResultData(response);
         }
 
         /// <summary>
@@ -57,22 +55,11 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="redirectBaseUrl">URL base del front para armar el link (ej: https://app/reset-password).</param>
         [HttpPost("forgot-password")]
         [ProducesResponseType((int)HttpStatusCode.OK)]
-        public async Task<ActionResult<Result<ForgotPasswordCommand.ForgotPasswordResponse>>> ForgotPassword([FromQuery] string email, [FromQuery] string redirectBaseUrl)
+        public async Task<ActionResult<Result<ForgotPasswordResponse>>> ForgotPassword([FromQuery] string email, [FromQuery] string redirectBaseUrl)
         {
-            var req = new ForgotPasswordRequest
-            {
-                Email = email,
-                RedirectBaseUrl = redirectBaseUrl,
-                IncludeDebug = _env.IsDevelopment()
-            };
+            var req = new ForgotPasswordRequest { Email = email, RedirectBaseUrl = redirectBaseUrl };
             var result = await _iSender.Send(new ForgotPasswordCommandRequest(req));
-            if (!result.IsSuccess)
-            {
-                if (string.Equals(result.Error, "Unauthorized", StringComparison.OrdinalIgnoreCase))
-                    return Unauthorized();
-                return BadRequest(result.Error);
-            }
-            return Ok(result.Datos);
+            return this.FromResultData(result);
         }
 
         /// <summary>
@@ -85,13 +72,7 @@ namespace Bancalite.WebApi.Controllers
         {
             var req = new ResetPasswordRequest { Email = email, Token = token, NewPassword = newPassword };
             var result = await _iSender.Send(new ResetPasswordCommandRequest(req));
-            if (!result.IsSuccess)
-            {
-                if (string.Equals(result.Error, "Unauthorized", StringComparison.OrdinalIgnoreCase))
-                    return Unauthorized();
-                return BadRequest(result.Error);
-            }
-            return Ok(new { reset = true });
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -102,7 +83,7 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<Result<Profile>>> Refresh([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
             var result = await _iSender.Send(new RefreshTokenCommandRequest(request), cancellationToken);
-            return result.IsSuccess ? Ok(result.Datos) : Unauthorized(result);
+            return this.FromResultData(result);
         }
 
         /// <summary>
@@ -113,7 +94,7 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<Result<bool>>> Logout([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
         {
             var result = await _iSender.Send(new LogoutCommandRequest(request.RefreshToken), cancellationToken);
-            return result.IsSuccess ? Ok(result) : Unauthorized(result);
+            return this.FromResult(result);
         }
 
         /// <summary>
@@ -124,7 +105,7 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<Result<Profile>>> Me(CancellationToken cancellationToken)
         {
             var result = await _iSender.Send(new MeQueryRequest(), cancellationToken);
-            return result.IsSuccess ? Ok(result) : Unauthorized(result);
+            return this.FromResult(result);
         }
     }
 }

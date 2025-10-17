@@ -34,6 +34,29 @@ namespace Bancalite.WebApi.Middleware
             {
                 await _next(context);
             }
+            catch (FluentValidation.ValidationException vex)
+            {
+                // Errores de validación (400) agregados en una sola cadena
+                _logger.LogWarning(vex, "Validación fallida: {Mensaje}", vex.Message);
+
+                context.Response.ContentType = "application/json";
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+
+                // Tomar mensajes distintos y unir por comas
+                var lista = vex.Errors
+                    .Select(e => e.ErrorMessage)
+                    .Where(m => !string.IsNullOrWhiteSpace(m))
+                    .Distinct()
+                    .ToList();
+                var mensaje = lista.Count > 0 ? string.Join(", ", lista) : "Solicitud inválida";
+
+                // Mantener misma estructura del resto del manejador (AppException)
+                var payload = new AppException(context.Response.StatusCode, mensaje);
+                var opciones = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+                var json = JsonSerializer.Serialize(payload, opciones);
+                await context.Response.WriteAsync(json);
+                return;
+            }
             catch (Exception ex)
             {
                 // Loguear la excepción

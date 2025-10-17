@@ -10,6 +10,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Identity;
+using Bancalite.Persitence.Model;
+using Microsoft.Extensions.Hosting;
 
 namespace Tests.Unit.Clientes;
 
@@ -48,6 +51,9 @@ public class ClientesWebApiFactory : WebApplicationFactory<Program>
                 options.DefaultChallengeScheme = "Test";
                 options.DefaultScheme = "Test";
             }).AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
+
+            // Seed de roles y usuario admin para que las verificaciones en handlers (DB) pasen
+            services.AddHostedService<ClientesSeedHostedService>();
         });
     }
 }
@@ -60,15 +66,49 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var claims = new[]
+        // Permitir sobreescribir el Email vía cabecera para simular distintos usuarios
+        var email = Context.Request.Headers.TryGetValue("X-Test-Email", out var hVal)
+            ? (string)hVal!
+            : "admin@test.local";
+
+        // Si el email no es el admin, no agregamos rol Admin (simula usuario normal)
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name, "test-user"),
-            new Claim(ClaimTypes.Role, "Admin")
+            new Claim(ClaimTypes.Email, email),
+            new Claim(ClaimTypes.Name, email.Split('@')[0])
         };
+        if (string.Equals(email, "admin@test.local", StringComparison.OrdinalIgnoreCase))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, "Test");
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
+}
+
+// HostedService para crear roles y usuario admin en la DB en memoria
+public class ClientesSeedHostedService : IHostedService
+{
+    private readonly IServiceProvider _services;
+    public ClientesSeedHostedService(IServiceProvider services) { _services = services; }
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        foreach (var r in new[] { "Admin", "User" })
+            if (!await roleManager.RoleExistsAsync(r)) await roleManager.CreateAsync(new IdentityRole<Guid>(r));
+
+        var admin = await userManager.FindByEmailAsync("admin@test.local");
+        if (admin == null)
+        {
+            admin = new AppUser { Id = Guid.NewGuid(), Email = "admin@test.local", UserName = "admin", EmailConfirmed = true, DisplayName = "Admin Test" };
+            await userManager.CreateAsync(admin, "Admin123$");
+            await userManager.AddToRoleAsync(admin, "Admin");
+        }
+    }
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

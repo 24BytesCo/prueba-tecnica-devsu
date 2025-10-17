@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Bancalite.Application.Core;
 
 namespace Bancalite.Application.Clientes.ClienteList
 {
@@ -31,12 +32,12 @@ namespace Bancalite.Application.Clientes.ClienteList
             string? Nombres = null,
             string? NumeroDocumento = null,
             bool? Estado = null
-        ) : IRequest<Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>>;
+        ) : IRequest<Result<Paged<ClienteListItem>>>;
 
         /// <summary>
         /// Manejador de la consulta de clientes.
         /// </summary>
-        internal class Handler : IRequestHandler<ClienteListQueryRequest, Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>> 
+        internal class Handler : IRequestHandler<ClienteListQueryRequest, Result<Paged<ClienteListItem>>> 
         {
             private readonly BancaliteContext _context;
             private readonly IMapper _mapeador;
@@ -53,7 +54,7 @@ namespace Bancalite.Application.Clientes.ClienteList
             /// <param name="request">Parámetros de paginación y filtros.</param>
             /// <param name="cancellationToken">Token de cancelación.</param>
             /// <returns>Resultado con elementos y metadatos de paginación.</returns>
-            public async Task<Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
+            public async Task<Result<Paged<ClienteListItem>>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -128,7 +129,7 @@ namespace Bancalite.Application.Clientes.ClienteList
                         }
                     }
 
-                    var paged = new Bancalite.Application.Core.Paged<ClienteListItem>
+                    var paged = new Paged<ClienteListItem>
                     {
                         Items = items,
                         Total = total,
@@ -136,12 +137,12 @@ namespace Bancalite.Application.Clientes.ClienteList
                         Tamano = tamano
                     };
 
-                    return Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>.Success(paged);
+                    return Result<Paged<ClienteListItem>>.Success(paged);
                 }
                 catch (Exception ex)
                 {
                     // Error inesperado al consultar
-                    return Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>.Failure("No se pudo obtener el listado de clientes");
+                    return Result<Paged<ClienteListItem>>.Failure("No se pudo obtener el listado de clientes");
                 }
             }
         }
