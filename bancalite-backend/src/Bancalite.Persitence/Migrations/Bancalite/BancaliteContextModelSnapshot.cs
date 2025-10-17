@@ -176,6 +176,10 @@ namespace Bancalite.Persitence.Migrations.Bancalite
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<decimal>("Monto")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -199,6 +203,10 @@ namespace Bancalite.Persitence.Migrations.Bancalite
                     b.HasIndex("TipoId");
 
                     b.HasIndex("CuentaId", "Fecha");
+
+                    b.HasIndex("CuentaId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("\"IdempotencyKey\" IS NOT NULL");
 
                     b.ToTable("movimientos", (string)null);
                 });
