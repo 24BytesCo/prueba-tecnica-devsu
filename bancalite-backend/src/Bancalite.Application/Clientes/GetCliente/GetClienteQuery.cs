@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Bancalite.Persitence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 
 namespace Bancalite.Application.Clientes.GetCliente
 {
@@ -22,10 +23,12 @@ namespace Bancalite.Application.Clientes.GetCliente
         internal class Handler : IRequestHandler<GetClienteQueryRequest, Bancalite.Application.Core.Result<ClienteDto>>
         {
             private readonly BancaliteContext _context;
+            private readonly IMapper _mapeador;
 
-            public Handler(BancaliteContext context)
+            public Handler(BancaliteContext context, IMapper mapeador)
             {
                 _context = context;
+                _mapeador = mapeador;
             }
 
             /// <summary>
@@ -49,31 +52,16 @@ namespace Bancalite.Application.Clientes.GetCliente
                     return Bancalite.Application.Core.Result<ClienteDto>.Failure("Cliente no encontrado");
                 }
 
-                var dto = new ClienteDto
-                {
-                    ClienteId = c.Id,
-                    PersonaId = c.PersonaId,
-                    Nombres = c.Persona.Nombres,
-                    Apellidos = c.Persona.Apellidos,
-                    Edad = c.Persona.Edad,
-                    GeneroId = c.Persona.GeneroId,
-                    GeneroNombre = c.Persona.Genero.Nombre,
-                    TipoDocumentoIdentidadId = c.Persona.TipoDocumentoIdentidadId,
-                    TipoDocumentoIdentidadNombre = c.Persona.TipoDocumentoIdentidad.Nombre,
-                    NumeroDocumento = c.Persona.NumeroDocumento,
-                    Direccion = c.Persona.Direccion,
-                    Telefono = c.Persona.Telefono,
-                    Email = c.Persona.Email,
-                    Estado = c.Estado,
-                    RolId = _context.UserRoles
-                        .Where(ur => c.AppUserId != null && ur.UserId == c.AppUserId)
-                        .Select(ur => (Guid?)ur.RoleId)
-                        .FirstOrDefault(),
-                    RolNombre = (from ur in _context.UserRoles
+                var dto = _mapeador.Map<ClienteDto>(c);
+                // Agregar rol si existe vínculo con Identity
+                dto.RolId = _context.UserRoles
+                    .Where(ur => c.AppUserId != null && ur.UserId == c.AppUserId)
+                    .Select(ur => (Guid?)ur.RoleId)
+                    .FirstOrDefault();
+                dto.RolNombre = (from ur in _context.UserRoles
                                  join r in _context.Roles on ur.RoleId equals r.Id
                                  where c.AppUserId != null && ur.UserId == c.AppUserId
-                                 select r.Name).FirstOrDefault()
-                };
+                                 select r.Name).FirstOrDefault();
 
                 return Bancalite.Application.Core.Result<ClienteDto>.Success(dto);
             }

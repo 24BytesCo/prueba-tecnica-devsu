@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Bancalite.Application.Core.Behaviors;
+using AutoMapper;
 
 namespace Bancalite.Application
 {
@@ -20,6 +21,9 @@ namespace Bancalite.Application
 
             // Pipeline: Validación automática para cada request de MediatR
             services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+            // AutoMapper: perfiles del ensamblado Application
+            services.AddAutoMapper(typeof(DependencyInjection).Assembly);
 
             return services;
         }

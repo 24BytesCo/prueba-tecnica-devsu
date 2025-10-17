@@ -7,6 +7,8 @@ using Bancalite.Persitence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace Bancalite.Application.Clientes.ClienteList
 {
@@ -37,10 +39,12 @@ namespace Bancalite.Application.Clientes.ClienteList
         internal class Handler : IRequestHandler<ClienteListQueryRequest, Bancalite.Application.Core.Result<Bancalite.Application.Core.Paged<ClienteListItem>>> 
         {
             private readonly BancaliteContext _context;
+            private readonly IMapper _mapeador;
 
-            public Handler(BancaliteContext context)
+            public Handler(BancaliteContext context, IMapper mapeador)
             {
                 _context = context;
+                _mapeador = mapeador;
             }
 
             /// <summary>
@@ -93,38 +97,36 @@ namespace Bancalite.Application.Clientes.ClienteList
                     var tamano = request.Tamano <= 0 ? 10 : request.Tamano;
                     var skip = (pagina - 1) * tamano;
 
-                    var items = await query
-                        .Skip(skip)
-                        .Take(tamano)
-                        .Select(c => new ClienteListItem
-                        {
-                            ClienteId = c.Id,
-                            PersonaId = c.PersonaId,
-                            Nombres = c.Persona.Nombres,
-                            Apellidos = c.Persona.Apellidos,
-                            Edad = c.Persona.Edad,
-                            GeneroId = c.Persona.GeneroId,
-                            GeneroNombre = c.Persona.Genero.Nombre,
-                            GeneroCodigo = c.Persona.Genero.Codigo,
-                            TipoDocumentoIdentidadId = c.Persona.TipoDocumentoIdentidadId,
-                            TipoDocumentoIdentidadNombre = c.Persona.TipoDocumentoIdentidad.Nombre,
-                            TipoDocumentoIdentidadCodigo = c.Persona.TipoDocumentoIdentidad.Codigo,
-                            NumeroDocumento = c.Persona.NumeroDocumento,
-                            Direccion = c.Persona.Direccion,
-                            Telefono = c.Persona.Telefono,
-                            Email = c.Persona.Email,
-                            Estado = c.Estado,
-                            // Rol (si hay AppUser vinculado, tomamos el primer rol asignado)
-                            RolId = _context.UserRoles
-                                .Where(ur => c.AppUserId != null && ur.UserId == c.AppUserId)
-                                .Select(ur => (Guid?)ur.RoleId)
-                                .FirstOrDefault(),
-                            RolNombre = (from ur in _context.UserRoles
-                                         join r in _context.Roles on ur.RoleId equals r.Id
-                                         where c.AppUserId != null && ur.UserId == c.AppUserId
-                                         select r.Name).FirstOrDefault()
-                        })
+                    // Proyección a DTO con AutoMapper (sin rol por ahora)
+                    var entidades = await query.Skip(skip).Take(tamano)
+                        .Include(c => c.Persona).ThenInclude(p => p.Genero)
+                        .Include(c => c.Persona).ThenInclude(p => p.TipoDocumentoIdentidad)
                         .ToListAsync(cancellationToken);
+                    var items = _mapeador.Map<List<ClienteListItem>>(entidades);
+
+                    // Enriquecer con rol primer rol usando consulta única
+                    var usuarios = entidades.Where(c => c.AppUserId != null).Select(c => c.AppUserId!.Value).Distinct().ToList();
+                    if (usuarios.Count > 0)
+                    {
+                        var rolesPorUsuario = (from ur in _context.UserRoles
+                                               join r in _context.Roles on ur.RoleId equals r.Id
+                                               where usuarios.Contains(ur.UserId)
+                                               select new { ur.UserId, ur.RoleId, r.Name })
+                                              .AsEnumerable()
+                                              .GroupBy(x => x.UserId)
+                                              .ToDictionary(g => g.Key, g => g.First());
+
+                        for (int i = 0; i < entidades.Count; i++)
+                        {
+                            var entidad = entidades[i];
+                            var dto = items[i];
+                            if (entidad.AppUserId != null && rolesPorUsuario.TryGetValue(entidad.AppUserId.Value, out var rol))
+                            {
+                                dto.RolId = rol.RoleId;
+                                dto.RolNombre = rol.Name;
+                            }
+                        }
+                    }
 
                     var paged = new Bancalite.Application.Core.Paged<ClienteListItem>
                     {

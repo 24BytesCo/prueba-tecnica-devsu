@@ -35,20 +35,24 @@ public class CatalogSeedHostedService : IHostedService
         var db = scope.ServiceProvider.GetRequiredService<BancaliteContext>();
         var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-        // 0) Verificar conectividad a la base de datos
-        bool canConnect = false;
-        try
+        // 0) Si el proveedor no es relacional (InMemory en pruebas), omitir chequeos/migraciones
+        var esRelacional = db.Database.IsRelational();
+        if (esRelacional)
         {
-            canConnect = await db.Database.CanConnectAsync(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "No se pudo conectar a la base de datos. Se omiten migraciones y seed.");
-        }
-        if (!canConnect)
-        {
-            _logger.LogWarning("Base de datos no disponible; se omiten migraciones y seed en este arranque.");
-            return;
+            bool puedeConectar = false;
+            try
+            {
+                puedeConectar = await db.Database.CanConnectAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "No se pudo conectar a la base de datos. Se omiten migraciones y seed.");
+            }
+            if (!puedeConectar)
+            {
+                _logger.LogWarning("Base de datos no disponible; se omiten migraciones y seed en este arranque.");
+                return;
+            }
         }
 
         // 1) Migraciones (tolerantes en cualquier entorno con pre-chequeo)
@@ -56,53 +60,55 @@ public class CatalogSeedHostedService : IHostedService
         {
             // Pre-chequeo: si existe esquema pero no historial de migraciones, omitir Migrate()
             var shouldMigrate = true;
-            // Usar una conexión NUEVA para no disponer la que EF administra internamente
-            var existingConn = db.Database.GetDbConnection();
-            var connectionString = db.Database.GetConnectionString() ?? existingConn.ConnectionString;
-            await using (var conn = new NpgsqlConnection(connectionString))
+            if (esRelacional)
             {
-                await conn.OpenAsync(cancellationToken);
-                // ¿Existen tablas señal (esquema ya creado)? Roles, Users o personas
-                await using (var cmd = conn.CreateCommand())
+                // Usar una conexión NUEVA para no disponer la que EF administra internamente
+                var connectionString = db.Database.GetConnectionString();
+                await using (var conn = new NpgsqlConnection(connectionString))
                 {
-                    cmd.CommandText = "select to_regclass('public.\"AspNetRoles\"') is not null";
-                    var existsRoles = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
-
-                    cmd.CommandText = "select to_regclass('public.\"AspNetUsers\"') is not null";
-                    var existsUsers = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
-
-                    cmd.CommandText = "select to_regclass('public.personas') is not null";
-                    var existsPersonas = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
-
-                    // ¿Existe el historial de migraciones?
-                    cmd.CommandText = "select to_regclass('public.\"__EFMigrationsHistory\"') is not null";
-                    var existsHistoryTable = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
-
-                    // Si hay tabla de historial, consultar número de filas aplicadas
-                    long appliedCount = -1;
-                    if (existsHistoryTable)
+                    await conn.OpenAsync(cancellationToken);
+                    // ¿Existen tablas señal (esquema ya creado)? Roles, Users o personas
+                    await using (var cmd = conn.CreateCommand())
                     {
-                        cmd.CommandText = "select count(*) from \"__EFMigrationsHistory\"";
-                        var obj = await cmd.ExecuteScalarAsync(cancellationToken);
-                        if (obj != null && obj != DBNull.Value)
+                        cmd.CommandText = "select to_regclass('public.\"AspNetRoles\"') is not null";
+                        var existsRoles = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        cmd.CommandText = "select to_regclass('public.\"AspNetUsers\"') is not null";
+                        var existsUsers = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        cmd.CommandText = "select to_regclass('public.personas') is not null";
+                        var existsPersonas = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        // ¿Existe el historial de migraciones?
+                        cmd.CommandText = "select to_regclass('public.\"__EFMigrationsHistory\"') is not null";
+                        var existsHistoryTable = (bool)(await cmd.ExecuteScalarAsync(cancellationToken) ?? false);
+
+                        // Si hay tabla de historial, consultar número de filas aplicadas
+                        long appliedCount = -1;
+                        if (existsHistoryTable)
                         {
-                            appliedCount = Convert.ToInt64(obj);
+                            cmd.CommandText = "select count(*) from \"__EFMigrationsHistory\"";
+                            var obj = await cmd.ExecuteScalarAsync(cancellationToken);
+                            if (obj != null && obj != DBNull.Value)
+                            {
+                                appliedCount = Convert.ToInt64(obj);
+                            }
+                        }
+
+                        // Si ya existe esquema clave, evitamos ejecutar Migrate (evita intentos de CREATE duplicados)
+                        if (existsRoles || existsUsers || existsPersonas)
+                        {
+                            shouldMigrate = false;
+                            _logger.LogWarning("Esquema existente detectado (tablas clave presentes). Se omite Migrate().");
                         }
                     }
-
-                    // Si ya existe esquema clave, evitamos ejecutar Migrate (evita intentos de CREATE duplicados)
-                    if (existsRoles || existsUsers || existsPersonas)
-                    {
-                        shouldMigrate = false;
-                        _logger.LogWarning("Esquema existente detectado (tablas clave presentes). Se omite Migrate().");
-                    }
                 }
-            }
 
-            if (shouldMigrate)
-            {
-                _logger.LogInformation("Aplicando migraciones de base de datos...");
-                await db.Database.MigrateAsync(cancellationToken);
+                if (shouldMigrate)
+                {
+                    _logger.LogInformation("Aplicando migraciones de base de datos...");
+                    await db.Database.MigrateAsync(cancellationToken);
+                }
             }
         }
         catch (InvalidOperationException ex) when (ex.Message.Contains("PendingModelChangesWarning", StringComparison.OrdinalIgnoreCase))
