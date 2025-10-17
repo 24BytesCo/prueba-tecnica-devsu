@@ -34,7 +34,14 @@ namespace Bancalite.Persitence
                     conn = $"Host={host};Port={port};Database={db};Username={user};Password={pass};Pooling=true";
                 }
 
-                options.UseNpgsql(conn);
+                if (string.Equals(conn, "UseInMemoryDb", StringComparison.OrdinalIgnoreCase))
+                {
+                    options.UseInMemoryDatabase("Bancalite_InMemory");
+                }
+                else
+                {
+                    options.UseNpgsql(conn);
+                }
 
                 // Diagnóstico útil en desarrollo
                 var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
@@ -51,3 +58,4 @@ namespace Bancalite.Persitence
         }
     }
 }
+
