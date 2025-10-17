@@ -32,6 +32,11 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<Result<MovimientoDto>>> Crear([FromBody] MovimientoCreateRequest request, CancellationToken ct)
         {
             var result = await _sender.Send(new MovimientoCreateCommandRequest(request), ct);
+            if (result.IsSuccess)
+            {
+                // 201 para creación de recurso
+                return Created(string.Empty, result.Datos);
+            }
             return this.FromResult(result);
         }
 
@@ -47,4 +52,3 @@ namespace Bancalite.WebApi.Controllers
         }
     }
 }
-

@@ -23,8 +23,7 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
                 .NotEmpty().WithMessage("TipoCodigo es requerido")
                 .Must(tc => tc == "CRE" || tc == "DEB").WithMessage("TipoCodigo debe ser CRE o DEB");
 
-            RuleFor(x => x.Request.Monto)
-                .GreaterThan(0).WithMessage("Monto inválido");
+            // El monto se valida en el handler para devolver 422 (regla de dominio)
 
             RuleFor(x => x.Request.IdempotencyKey)
                 .MaximumLength(100).When(x => !string.IsNullOrWhiteSpace(x.Request.IdempotencyKey));
@@ -40,4 +39,3 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
         }
     }
 }
-

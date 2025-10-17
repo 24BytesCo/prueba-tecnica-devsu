@@ -121,6 +121,38 @@ Endpoints y reglas principales del módulo Cuentas:
   - Inactiva una cuenta si `SaldoActual` es 0; si no, devuelve 422.
   - Requiere rol `Admin`.
 
+## Movimientos (API)
+
+Endpoints y reglas principales del módulo Movimientos:
+
+- `POST /api/movimientos`
+  - Registra un movimiento sobre una cuenta: `TipoCodigo = CRE` (crédito) o `DEB` (débito).
+  - Idempotencia opcional mediante `IdempotencyKey` (misma clave → mismo resultado, sin duplicar).
+  - Validaciones de dominio (respuesta 422 cuando corresponda):
+    - Monto normalizado a 2 decimales con half-even (Bankers) y debe ser > 0.
+    - Para débitos: sin sobregiro (mensaje “Saldo no disponible”).
+    - Tope diario de retiros por cuenta (por defecto `1000.00`) (mensaje “Cupo diario Excedido”).
+    - La cuenta debe estar Activa.
+  - Seguridad: `Authorize`. Admin o propietario de la cuenta.
+  - Respuesta: 201 (Created) con el DTO del movimiento en éxito; 4xx mapeados vía `Result`.
+
+- `GET /api/movimientos?numeroCuenta=&desde=&hasta=`
+  - Lista movimientos por número de cuenta y rango de fechas (UTC, [desde, hasta)).
+  - Seguridad: `Authorize`. Admin o propietario de la cuenta.
+
+### Configuración de Movimientos
+
+En `appsettings.json` (opcional; valores por defecto indicados):
+
+```json
+{
+  "Movimientos": {
+    "TopeDiario": 1000,
+    "RoundingMode": "ToEven"
+  }
+}
+```
+
 ### Manejo de errores (WebApi)
 
 Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP:
@@ -152,7 +184,7 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
 
 - CRUD Clientes: implementado (con seguridad Admin para crear y propietario/admin para consultar/actualizar/borrar).
 - CRUD Cuentas: implementado con reglas y roles anteriores.
-- Movimientos: pendiente (créditos/débitos, tope diario, mensajes "Saldo no disponible"/"Cupo diario Excedido", concurrencia e idempotencia).
+- Movimientos: implementado (créditos/débitos, tope diario, sobregiro, idempotencia, listado por fechas).
 - Reporte de estado de cuenta (JSON/PDF base64): pendiente.
 
 ## Testing
@@ -163,7 +195,7 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
 - Mantener validaciones en validadores; reglas con acceso a datos sensibles en handlers
 - Evitar lógica en controllers: delegar en Application (MediatR)
 - Usar migraciones para cambios de esquema; no modificar DB a mano
-- Nombres y mensajes cortos y claros en español
+- Nombres y mensajes cortos y claros.
 
 ## Testing
 
@@ -172,9 +204,43 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
   - Auth: login, me, logout, refresh.
   - Clientes: listar, crear, get por id, put/patch/delete (incluyendo seguridad propietario/admin).
   - Cuentas: listar (solo admin), crear (admin/propietario), detalle, mis cuentas, unicidad de número, put/patch (solo admin), cambio de estado y delete con regla de saldo.
+  - Movimientos: 
+    - Créditos/débitos válidos → 201 y saldoPosterior correcto.
+    - Débito sin saldo suficiente → 422 “Saldo no disponible”.
+    - Tope diario excedido → 422 “Cupo diario Excedido”.
+    - Débito exacto deja saldo en 0.00.
+    - Saldo 0 y débito → 422.
+    - Idempotencia con misma clave → mismo MovimientoId y mismo resultado.
+    - Cuenta inactiva → 404 en intento de movimiento.
+    - Dos débitos consecutivos (800 y 300) sobre saldo 1000 → uno OK y el otro 422.
 - En pruebas se usa autenticación de test con cabecera `X-Test-Email` para simular identidad:
   - Sin cabecera → Admin por defecto.
   - Con cabecera → Usuario con ese email (sin rol Admin), útil para validar casos de propietario/no-admin.
+
+## Migraciones
+
+- Comandos generales:
+
+```bash
+dotnet ef migrations add <Nombre> -p src/Bancalite.Persitence -s src/Bancalite.WebApi
+dotnet ef database update -p src/Bancalite.Persitence -s src/Bancalite.WebApi
+```
+
+- Contexto usado: `BancaliteContext` (único). Para dirigir la salida a la carpeta actual de migraciones:
+
+```bash
+dotnet ef migrations add AddMovimientoIdempotencyKey \
+  -p bancalite-backend/src/Bancalite.Persitence \
+  -s bancalite-backend/src/Bancalite.WebApi \
+  --context BancaliteContext -o Migrations/Bancalite
+
+dotnet ef database update \
+  -p bancalite-backend/src/Bancalite.Persitence \
+  -s bancalite-backend/src/Bancalite.WebApi \
+  --context BancaliteContext
+```
+
+- Si la base ya tenía tablas (por ejemplo Identity) pero el historial de migraciones está vacío, puede ser necesario hacer un “baseline” del primer snapshot y luego aplicar las migraciones nuevas. En desarrollo, como alternativa rápida, recrear la base de datos evita inconsistencias.
 
 ## Solución de problemas
 
