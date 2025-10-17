@@ -115,6 +115,14 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                             }
                         }
 
+                        // Verificar que el AppUser (nuevo o existente) no esté ya vinculado a otro Cliente
+                        var yaVinculado = await _context.Clientes.AsNoTracking()
+                            .AnyAsync(c => c.AppUserId == appUser!.Id, cancellationToken);
+                        if (yaVinculado)
+                        {
+                            return Result<Guid>.Failure("Conflict: El email ya está registrado para otro cliente");
+                        }
+
                         // Se determina el rol: IdRol o 'User' por defecto
                         string roleName = "User";
                         if (request.clienteCreateRequest.IdRol.HasValue)

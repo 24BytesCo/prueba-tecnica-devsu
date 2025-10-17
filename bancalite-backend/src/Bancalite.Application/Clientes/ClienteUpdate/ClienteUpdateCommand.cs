@@ -102,7 +102,20 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                 p.Telefono = string.IsNullOrWhiteSpace(request.Request.Telefono) ? null : request.Request.Telefono.Trim();
                 p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
 
+                bool inhabilitar = request.Request.Estado == false && cliente.Estado == true;
                 cliente.Estado = request.Request.Estado;
+
+                // Si se inhabilitó el cliente, inhabilitar todas sus cuentas
+                if (inhabilitar)
+                {
+                    var cuentas = await _context.Cuentas.Where(c => c.ClienteId == cliente.Id).ToListAsync(cancellationToken);
+                    foreach (var cta in cuentas)
+                    {
+                        if (cta.Estado != Domain.EstadoCuenta.Inactiva)
+                            cta.Desactivar();
+                    }
+                }
+
                 cliente.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync(cancellationToken);
@@ -167,6 +180,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                 if (request.Request.Direccion != null) p.Direccion = string.IsNullOrWhiteSpace(request.Request.Direccion) ? null : request.Request.Direccion.Trim();
                 if (request.Request.Telefono != null) p.Telefono = string.IsNullOrWhiteSpace(request.Request.Telefono) ? null : request.Request.Telefono.Trim();
                 if (request.Request.Email != null) p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
+                bool inhabilitar = request.Request.Estado.HasValue && request.Request.Estado.Value == false && cliente.Estado == true;
                 if (request.Request.Estado.HasValue) cliente.Estado = request.Request.Estado.Value;
 
                 // Validar unicidad de documento si cambió (si ambos campos están presentes)
@@ -180,6 +194,17 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                     if (duplicado)
                     {
                         return Result<bool>.Failure("La persona con el documento indicado ya existe");
+                    }
+                }
+
+                // Si se inhabilitó el cliente, inhabilitar todas sus cuentas
+                if (inhabilitar)
+                {
+                    var cuentas = await _context.Cuentas.Where(c => c.ClienteId == cliente.Id).ToListAsync(cancellationToken);
+                    foreach (var cta in cuentas)
+                    {
+                        if (cta.Estado != Domain.EstadoCuenta.Inactiva)
+                            cta.Desactivar();
                     }
                 }
 

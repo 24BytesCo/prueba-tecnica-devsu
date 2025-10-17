@@ -68,8 +68,17 @@ namespace Bancalite.Application.Clientes.ClienteDelete
                     return Result<bool>.Success(true);
                 }
 
+                // Inhabilitar cliente y todas sus cuentas asociadas
                 cliente.Estado = false;
                 cliente.UpdatedAt = DateTime.UtcNow;
+                var cuentas = await _context.Cuentas.Where(c => c.ClienteId == cliente.Id).ToListAsync(cancellationToken);
+                foreach (var cta in cuentas)
+                {
+                    if (cta.Estado != Domain.EstadoCuenta.Inactiva)
+                    {
+                        cta.Desactivar();
+                    }
+                }
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<bool>.Success(true);

@@ -28,7 +28,8 @@ public static class DependencyInjection
         // Identity Core (usuarios y roles) usando el mismo DbContext
         services.AddIdentityCore<AppUser>(options =>
             {
-                options.User.RequireUniqueEmail = false;
+                // El correo debe ser único para usuarios de Identity
+                options.User.RequireUniqueEmail = true;
                 options.Password.RequireDigit = false;
                 options.Password.RequireLowercase = false;
                 options.Password.RequireNonAlphanumeric = false;

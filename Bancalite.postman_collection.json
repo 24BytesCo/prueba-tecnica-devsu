@@ -1,0 +1,419 @@
+{
+  "info": {
+    "name": "Bancalite API – Ejemplos",
+    "_postman_id": "2c0b0e5d-6f2b-4bf3-9f9b-6b4f6f7b66a1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección con ejemplos para probar los endpoints de Bancalite. Usa variables para catálogos y auth."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5208" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+
+    { "key": "genero_M", "value": "c42172c1-86bf-48d6-84e1-0a2349d2f858" },
+    { "key": "genero_F", "value": "c66e4a51-ef57-494f-8f39-94e95b105763" },
+    { "key": "genero_X", "value": "530c380e-6f57-4428-95ab-340997075631" },
+
+    { "key": "tipoDoc_CC", "value": "801f286d-9735-4335-b8f9-e71869ce4c54" },
+    { "key": "tipoDoc_PAS", "value": "cf6c58b8-ccb5-42c1-a0b4-b8d8f7278477" },
+    { "key": "tipoDoc_CE", "value": "de45611a-c597-45ec-8b31-96d07dbf2237" },
+
+    { "key": "tipoCuenta_AHO", "value": "74580a06-d88d-40b2-a11b-cd96ba28c88e" },
+    { "key": "tipoCuenta_COR", "value": "72516b86-67a8-4b0b-a724-a88b2c9b7f6e" },
+    { "key": "tipoCuenta_PLZ", "value": "076019ae-31eb-4613-8fb5-bd319f8f4d2e" },
+
+    { "key": "role_admin_id", "value": "495b8f2b-1007-4a48-b4f5-f75c9aaa45c9" },
+    { "key": "role_user_id", "value": "18808948-f17e-453c-9341-e2a19977b7bd" },
+
+    { "key": "clienteActualId", "value": "" },
+    { "key": "cuentaActualId", "value": "" },
+    { "key": "numeroCuentaActual", "value": "" },
+    { "key": "desde", "value": "" },
+    { "key": "hasta", "value": "" },
+
+    { "key": "admin_email", "value": "admin@bancalite.com" },
+    { "key": "admin_password", "value": "Admin123$" },
+    { "key": "user_email", "value": "juan.perez@test.com" },
+    { "key": "user_password", "value": "User123$" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json() || {};",
+                  "if (json.token) pm.collectionVariables.set('accessToken', json.token);",
+                  "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api","auth","me"] }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api","auth","refresh"] },
+            "body": { "mode":"raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json() || {};",
+              "if (json.token) pm.collectionVariables.set('accessToken', json.token);",
+              "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/auth/logout", "host": ["{{baseUrl}}"], "path": ["api","auth","logout"] },
+            "body": { "mode":"raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Crear Cliente (User)",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/clientes", "host": ["{{baseUrl}}"], "path": ["api","clientes"] },
+            "body": { "mode":"raw", "raw": "{\n  \"nombres\": \"Juan\",\n  \"apellidos\": \"Pérez\",\n  \"edad\": 30,\n  \"generoId\": \"{{genero_M}}\",\n  \"tipoDocumentoIdentidad\": \"{{tipoDoc_CC}}\",\n  \"numeroDocumento\": \"CC-{{{{$timestamp}}}}\",\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\",\n  \"idRol\": \"{{role_user_id}}\"\n}" }
+          },
+          "event": [
+            { "listen":"test", "script": { "type":"text/javascript", "exec": [
+              "pm.test('201/200', () => pm.expect([200,201]).to.include(pm.response.code));",
+              "const json = pm.response.json() || {};",
+              "const id = json.datos || json.Datos;",
+              "if (id) pm.collectionVariables.set('clienteActualId', id);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Listar Clientes Activos (Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clientes?pagina=1&tamano=10&estado=true", "host": ["{{baseUrl}}"], "path": ["api","clientes"], "query": [
+              {"key":"pagina","value":"1"}, {"key":"tamano","value":"10"}, {"key":"estado","value":"true"}
+            ] }
+          }
+        },
+                {
+          "name": "Listar Clientes Inactivo (Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clientes?pagina=1&tamano=10&estado=false", "host": ["{{baseUrl}}"], "path": ["api","clientes"], "query": [
+              {"key":"pagina","value":"1"}, {"key":"tamano","value":"10"}, {"key":"estado","value":"false"}
+            ] }
+          }
+        },
+        {
+          "name": "Detalle Cliente por Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteActualId}}", "host": ["{{baseUrl}}"], "path": ["api","clientes","{{clienteActualId}}"] }
+          }
+        },
+        {
+          "name": "PUT Cliente (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteActualId}}", "host": ["{{baseUrl}}"], "path": ["api","clientes","{{clienteActualId}}"] },
+            "body": { "mode":"raw", "raw": "{\n  \"nombres\": \"Juan Actualizado\",\n  \"apellidos\": \"Pérez\",\n  \"edad\": 31,\n  \"generoId\": \"{{genero_M}}\",\n  \"tipoDocumentoIdentidadId\": \"{{tipoDoc_CC}}\",\n  \"numeroDocumento\": \"CC-{{{{$timestamp}}}}\",\n  \"direccion\": \"Calle 1\",\n  \"telefono\": \"555-0001\",\n  \"email\": \"{{user_email}}\",\n  \"estado\": true\n}" }
+          }
+        },
+        {
+          "name": "PATCH Cliente (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteActualId}}", "host": ["{{baseUrl}}"], "path": ["api","clientes","{{clienteActualId}}"] },
+            "body": { "mode":"raw", "raw": "{\n  \"telefono\": \"555-9999\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE Cliente (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/clientes/{{clienteActualId}}", "host": ["{{baseUrl}}"], "path": ["api","clientes","{{clienteActualId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cuentas",
+      "item": [
+        {
+          "name": "Crear Cuenta (para cliente)",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/cuentas", "host": ["{{baseUrl}}"], "path": ["api","cuentas"] },
+            "body": { "mode":"raw", "raw": "{\n  \"numeroCuenta\": \"\",\n  \"tipoCuentaId\": \"{{tipoCuenta_AHO}}\",\n  \"clienteId\": \"{{clienteActualId}}\",\n  \"saldoInicial\": 1000\n}" }
+          },
+          "event": [
+            { "listen":"test", "script": { "type":"text/javascript", "exec": [
+              "pm.test('201/200', () => pm.expect([200,201]).to.include(pm.response.code));",
+              "const json = pm.response.json() || {};",
+              "const id = json.datos || json.Datos;",
+              "if (id) pm.collectionVariables.set('cuentaActualId', id);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Detalle Cuenta",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/cuentas/{{cuentaActualId}}", "host": ["{{baseUrl}}"], "path": ["api","cuentas","{{cuentaActualId}}"] }
+          },
+          "event": [
+            { "listen":"test", "script": { "type":"text/javascript", "exec": [
+              "const json = pm.response.json() || {};",
+              "const datos = json.datos || json.Datos || {};",
+              "if (datos.numeroCuenta) pm.collectionVariables.set('numeroCuentaActual', datos.numeroCuenta);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Listar Cuentas (Admin)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/cuentas?pagina=1&tamano=10", "host": ["{{baseUrl}}"], "path": ["api","cuentas"], "query": [
+              {"key":"pagina","value":"1"},{"key":"tamano","value":"10"}
+            ] }
+          }
+        },
+        {
+          "name": "Mis Cuentas (como usuario)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/cuentas/mias", "host": ["{{baseUrl}}"], "path": ["api","cuentas","mias"] }
+          }
+        },
+        {
+          "name": "PATCH Estado (Inactiva)",
+          "request": {
+            "method": "PATCH",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/cuentas/{{cuentaActualId}}/estado", "host": ["{{baseUrl}}"], "path": ["api","cuentas","{{cuentaActualId}}","estado"] },
+            "body": { "mode":"raw", "raw": "{\n  \"estado\": \"Inactiva\",\n  \"motivo\": \"Cierre solicitado\"\n}" }
+          }
+        },
+        {
+          "name": "DELETE Cuenta (soft)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/cuentas/{{cuentaActualId}}", "host": ["{{baseUrl}}"], "path": ["api","cuentas","{{cuentaActualId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Movimientos",
+      "item": [
+        {
+          "name": "Crear Crédito +200",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/movimientos", "host": ["{{baseUrl}}"], "path": ["api","movimientos"] },
+            "body": { "mode":"raw", "raw": "{\n  \"numeroCuenta\": \"{{numeroCuentaActual}}\",\n  \"tipoCodigo\": \"CRE\",\n  \"monto\": 200,\n  \"idempotencyKey\": \"cre-1\",\n  \"descripcion\": \"Abono inicial\"\n}" }
+          }
+        },
+        {
+          "name": "Crear Débito -50",
+          "request": {
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/movimientos", "host": ["{{baseUrl}}"], "path": ["api","movimientos"] },
+            "body": { "mode":"raw", "raw": "{\n  \"numeroCuenta\": \"{{numeroCuentaActual}}\",\n  \"tipoCodigo\": \"DEB\",\n  \"monto\": 50,\n  \"idempotencyKey\": \"deb-1\",\n  \"descripcion\": \"Retiro efectivo\"\n}" }
+          }
+        },
+        {
+          "name": "Listar Movimientos (hoy)",
+          "event": [
+            { "listen": "prerequest", "script": { "type":"text/javascript", "exec": [
+              "const d0 = new Date(); d0.setUTCHours(0,0,0,0);",
+              "const d1 = new Date(); d1.setUTCHours(23,59,59,999);",
+              "pm.collectionVariables.set('desde', d0.toISOString());",
+              "pm.collectionVariables.set('hasta', d1.toISOString());"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/movimientos?numeroCuenta={{numeroCuentaActual}}&desde={{desde}}&hasta={{hasta}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","movimientos"],
+              "query": [
+                {"key":"numeroCuenta","value":"{{numeroCuentaActual}}"},
+                {"key":"desde","value":"{{desde}}"},
+                {"key":"hasta","value":"{{hasta}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "JSON por Cuenta (hoy)",
+          "event": [
+            { "listen": "prerequest", "script": { "type":"text/javascript", "exec": [
+              "const d0 = new Date(); d0.setUTCHours(0,0,0,0);",
+              "const d1 = new Date(); d1.setUTCHours(23,59,59,999);",
+              "pm.collectionVariables.set('desde', d0.toISOString());",
+              "pm.collectionVariables.set('hasta', d1.toISOString());"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reportes?numeroCuenta={{numeroCuentaActual}}&desde={{desde}}&hasta={{hasta}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","reportes"],
+              "query": [
+                {"key":"numeroCuenta","value":"{{numeroCuentaActual}}"},
+                {"key":"desde","value":"{{desde}}"},
+                {"key":"hasta","value":"{{hasta}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "JSON por Cliente (hoy)",
+          "event": [
+            { "listen": "prerequest", "script": { "type":"text/javascript", "exec": [
+              "const d0 = new Date(); d0.setUTCHours(0,0,0,0);",
+              "const d1 = new Date(); d1.setUTCHours(23,59,59,999);",
+              "pm.collectionVariables.set('desde', d0.toISOString());",
+              "pm.collectionVariables.set('hasta', d1.toISOString());"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reportes?clienteId={{clienteActualId}}&desde={{desde}}&hasta={{hasta}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","reportes"],
+              "query": [
+                {"key":"clienteId","value":"{{clienteActualId}}"},
+                {"key":"desde","value":"{{desde}}"},
+                {"key":"hasta","value":"{{hasta}}"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "PDF por Cuenta (hoy)",
+          "event": [
+            { "listen": "prerequest", "script": { "type":"text/javascript", "exec": [
+              "const d0 = new Date(); d0.setUTCHours(0,0,0,0);",
+              "const d1 = new Date(); d1.setUTCHours(23,59,59,999);",
+              "pm.collectionVariables.set('desde', d0.toISOString());",
+              "pm.collectionVariables.set('hasta', d1.toISOString());"
+            ] } },
+            { "listen": "test", "script": { "type":"text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('application/pdf', () => pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/pdf'));"
+            ] } }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/reportes/pdf?numeroCuenta={{numeroCuentaActual}}&desde={{desde}}&hasta={{hasta}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","reportes","pdf"],
+              "query": [
+                {"key":"numeroCuenta","value":"{{numeroCuentaActual}}"},
+                {"key":"desde","value":"{{desde}}"},
+                {"key":"hasta","value":"{{hasta}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sesiones de Usuario",
+      "item": [
+        {
+          "name": "Login (Usuario creado)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ {"key":"Content-Type","value":"application/json"} ],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] },
+            "body": { "mode":"raw", "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}" }
+          },
+          "event": [
+            { "listen":"test", "script": { "type":"text/javascript", "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json() || {};",
+              "if (json.token) pm.collectionVariables.set('accessToken', json.token);",
+              "if (json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+            ] } }
+          ]
+        },
+        {
+          "name": "Mis Cuentas (usuario)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/cuentas/mias", "host": ["{{baseUrl}}"], "path": ["api","cuentas","mias"] }
+          }
+        }
+      ]
+    }
+  ]
+}
+
