@@ -9,14 +9,14 @@ namespace Bancalite.Application.Core
     {
         public bool IsSuccess { get; set; }
 
-        public T? Value { get; set; }
+        public T? Datos { get; set; }
 
         public string? Error { get; set; }
 
-        public static Result<T> Success(T value) => new Result<T>
+        public static Result<T> Success(T datos) => new Result<T>
         {
             IsSuccess = true,
-            Value = value
+            Datos = datos
         };
 
         public static Result<T> Failure(string error) => new Result<T>

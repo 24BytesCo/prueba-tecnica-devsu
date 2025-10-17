@@ -38,12 +38,13 @@ namespace Bancalite.WebApi.Controllers
         /// </remarks>
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateCliente([FromForm] ClienteCreateRequest request, CancellationToken cancellationToken)
+        public async Task<ActionResult<Bancalite.Application.Core.Result<Guid>>> CreateCliente([FromForm] ClienteCreateRequest request, CancellationToken cancellationToken)
         {
             // Enviar comando a Application (CQRS)
             var command = new ClienteCreateCommand.ClienteCreateCommandRequest(request);
             
-            return Ok(await _sender.Send(command, cancellationToken));
+            var result = await _sender.Send(command, cancellationToken);
+            return Ok(result);
         }
 
         /// <summary>
@@ -52,7 +53,7 @@ namespace Bancalite.WebApi.Controllers
         /// <param name="cancellationToken">Token de cancelación.</param>
         /// <returns>Listado de clientes.</returns>
         [HttpGet]
-        public async Task<IActionResult> GetClientes(CancellationToken cancellationToken)
+        public async Task<ActionResult<Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>>> GetClientes(CancellationToken cancellationToken)
         {
             // Enviar query para obtener cliente
             var query = new ClienteListQuery.ClienteListQueryRequest();
@@ -62,3 +63,4 @@ namespace Bancalite.WebApi.Controllers
 
     }
 }
+

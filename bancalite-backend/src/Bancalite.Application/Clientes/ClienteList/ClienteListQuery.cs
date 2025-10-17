@@ -18,12 +18,12 @@ namespace Bancalite.Application.Clientes.ClienteList
         /// <summary>
         /// Solicitud para listar clientes (sin filtros por ahora).
         /// </summary>
-        public record ClienteListQueryRequest() : IRequest<IReadOnlyList<ClienteListItem>>;
+        public record ClienteListQueryRequest() : IRequest<Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>>;
 
         /// <summary>
         /// Manejador de la consulta de clientes.
         /// </summary>
-        internal class Handler : IRequestHandler<ClienteListQueryRequest, IReadOnlyList<ClienteListItem>>
+        internal class Handler : IRequestHandler<ClienteListQueryRequest, Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>> 
         {
             private readonly BancaliteContext _context;
 
@@ -35,7 +35,7 @@ namespace Bancalite.Application.Clientes.ClienteList
             /// <summary>
             /// Ejecuta la consulta y retorna la lista de clientes mapeada a DTOs.
             /// </summary>
-            public async Task<IReadOnlyList<ClienteListItem>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
+            public async Task<Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>> Handle(ClienteListQueryRequest request, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -77,14 +77,18 @@ namespace Bancalite.Application.Clientes.ClienteList
 
                     // Ejecutar y retornar
                     var data = await query.ToListAsync(cancellationToken);
-                    return data;
+                    IReadOnlyList<ClienteListItem> ro = data; return Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>.Success(ro);
                 }
                 catch (Exception ex)
                 {
                     // Error inesperado al consultar
-                    throw new InvalidOperationException("No se pudo obtener el listado de clientes", ex);
+                    return Bancalite.Application.Core.Result<IReadOnlyList<ClienteListItem>>.Failure("No se pudo obtener el listado de clientes");
                 }
             }
         }
     }
 }
+
+
+
+
