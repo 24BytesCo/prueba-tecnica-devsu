@@ -27,7 +27,8 @@
     "@ngrx/store-devtools": "^18.0.0",
     "rxjs": "^7.8.1",
     "tslib": "^2.6.2",
-    "zone.js": "^0.14.4"
+    "zone.js": "^0.14.4",
+    "sweetalert2": "^11.12.4"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^18.2.6",
@@ -50,4 +51,3 @@
     "typescript": "~5.4.5"
   }
 }
-

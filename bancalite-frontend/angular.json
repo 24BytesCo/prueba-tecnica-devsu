@@ -29,7 +29,10 @@
               { "glob": "favicon.ico", "input": "src", "output": "/" },
               "src/assets"
             ],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "src/styles.scss",
+              "node_modules/sweetalert2/dist/sweetalert2.min.css"
+            ],
             "scripts": []
           },
           "configurations": {
