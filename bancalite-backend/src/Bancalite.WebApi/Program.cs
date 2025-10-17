@@ -101,3 +101,6 @@ app.MapGet("/status", () => Results.Json(new
 app.MapControllers();
 
 app.Run();
+
+// Clase Program parcial para pruebas de integración
+public partial class Program { }

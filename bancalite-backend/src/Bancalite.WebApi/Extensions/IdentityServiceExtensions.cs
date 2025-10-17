@@ -21,6 +21,15 @@ namespace Bancalite.WebApi.Extensions
             var opts = section.Get<JwtOptions>() ?? new JwtOptions();
             var key = opts.Key ?? string.Empty;
 
+            // Fallback seguro para evitar key vacía (tests/entornos sin configuración completa)
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                key = "dev-fallback-key-0123456789abcdef0123456789abcdef"; // 64 chars
+                opts.Issuer ??= "Bancalite.WebApi";
+                opts.Audience ??= "Bancalite.Client";
+            }
+
+            // Configuración de autenticación JWT
             services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(o =>
@@ -67,3 +76,5 @@ namespace Bancalite.WebApi.Extensions
         }
     }
 }
+
+
