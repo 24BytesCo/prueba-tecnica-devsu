@@ -213,9 +213,38 @@ Los handlers del Application layer devuelven `Result<T>`; el WebApi mapea a HTTP
     - Idempotencia con misma clave → mismo MovimientoId y mismo resultado.
     - Cuenta inactiva → 404 en intento de movimiento.
     - Dos débitos consecutivos (800 y 300) sobre saldo 1000 → uno OK y el otro 422.
-- En pruebas se usa autenticación de test con cabecera `X-Test-Email` para simular identidad:
-  - Sin cabecera → Admin por defecto.
-  - Con cabecera → Usuario con ese email (sin rol Admin), útil para validar casos de propietario/no-admin.
+  - En pruebas se usa autenticación de test con cabecera `X-Test-Email` para simular identidad:
+    - Sin cabecera → Admin por defecto.
+    - Con cabecera → Usuario con ese email (sin rol Admin), útil para validar casos de propietario/no-admin.
+
+## Reportes (API)
+
+Endpoints del reporte de estado de cuenta (JSON y PDF):
+
+- `GET /api/reportes?clienteId|numeroCuenta&desde&hasta`
+  - Devuelve JSON con:
+    - `desde`, `hasta`, `clienteId/clienteNombre` y/o `numeroCuenta`.
+    - Totales: `totalCreditos`, `totalDebitos`, `saldoInicial`, `saldoFinal`.
+    - Detalle: lista de movimientos `{ fecha, numeroCuenta, tipoCodigo, monto, saldoPrevio, saldoPosterior, descripcion }`.
+  - Reglas y seguridad:
+    - Debe indicarse `clienteId` o `numeroCuenta` (400 si faltan ambos; 400 si rango inválido).
+    - Admin u operador con permiso; clientes solo ven sus datos.
+    - 404 si no hay datos/entidades encontradas.
+
+- `GET /api/reportes/pdf?clienteId|numeroCuenta&desde&hasta`
+  - Renderiza el mismo dataset en PDF (paridad con JSON garantizada al compartir DTO).
+  - Encabezados de respuesta: `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="reporte-estado-cuenta-<timestamp>.pdf"`.
+  - Paginación en PDF: cabecera por página + tabla de movimientos; se parte automáticamente el detalle para listas largas.
+  - Plantilla simple con fuente estándar (Helvetica).
+
+Notas de cálculo
+- Los totales se agregan sobre el rango `[desde, hasta]` en UTC.
+- `saldoInicial/saldoFinal` se calculan a partir de `SaldoPrevio/SaldoPosterior` del primer/último movimiento por cuenta. Si no hay movimientos, se usa el `SaldoActual` como referencia.
+
+Errores y códigos (JSON/PDF)
+- 400: validación de filtros/rango.
+- 401/403: autenticación/autorización.
+- 404: cliente/cuenta inexistente o sin datos.
 
 ## Migraciones
 
@@ -247,4 +276,3 @@ dotnet ef database update \
 - Build con archivos bloqueados: matar proceso `Bancalite.WebApi` (Windows: `taskkill /IM Bancalite.WebApi.exe /F`)
 - Error tokens de Identity: asegurar `.AddDefaultTokenProviders()` en DI
 - Ethereal no entrega a Gmail/Outlook: revisar mensajes en su UI
-
