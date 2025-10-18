@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using FluentAssertions;
+using System.Net.Http.Json;
 
 namespace Tests.Unit.Auth;
 

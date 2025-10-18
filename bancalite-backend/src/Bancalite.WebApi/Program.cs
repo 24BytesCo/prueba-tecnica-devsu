@@ -1,8 +1,8 @@
-using System.Reflection;
 using Bancalite.Application;
 using Bancalite.Infraestructure;
 using Bancalite.WebApi.Extensions;
 using QuestPDF.Infrastructure;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 

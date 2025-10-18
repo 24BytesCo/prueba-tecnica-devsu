@@ -1,5 +1,3 @@
-using System;
-
 namespace Bancalite.Application.Cuentas.CuentaResponse
 {
     /// <summary>

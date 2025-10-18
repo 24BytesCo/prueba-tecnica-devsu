@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { ClientesService } from '../../../core/services/clientes.service';
 import { ClienteListItem } from '../../../shared/models/clientes.models';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
@@ -12,10 +13,13 @@ import Swal from 'sweetalert2';
       <div class="row">
         <h1 class="brand">Clientes</h1>
         <span class="spacer"></span>
-        <button class="btn-primary" (click)="openNew()">Nuevo</button>
+        <button class="btn btn-primary btn-lg" (click)="openNew()">Nuevo</button>
       </div>
       <div class="row" style="margin: 12px 0;">
         <input (input)="onSearch($event)" placeholder="Buscar" style="padding:8px; width: 280px;" />
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px; color: var(--muted);">
+          <input type="checkbox" [checked]="soloActivos" (change)="toggleSoloActivos($event)" /> Clientes activos
+        </label>
       </div>
       <div class="table">
         <div class="thead">
@@ -42,59 +46,12 @@ import Swal from 'sweetalert2';
         <span style="margin:0 8px;">Página {{ pagina }}</span>
         <button (click)="next()" [disabled]="items.length<tamano">Siguiente</button>
       </div>
-      <app-modal [open]="showModal" [title]="isEdit ? 'Editar Cliente' : 'Nuevo Cliente'" [closable]="false" (close)="closeModal()">
-        <form [formGroup]="form" (ngSubmit)="saveForm()" class="form form-grid single">
-          <div class="form-field">
-            <label>Nombres</label>
-            <input class="input" formControlName="nombres" />
-            <small class="error" *ngIf="form.controls.nombres.touched && form.controls.nombres.invalid">Requerido (máx 120)</small>
-          </div>
-          <div class="form-field">
-            <label>Apellidos</label>
-            <input class="input" formControlName="apellidos" />
-            <small class="error" *ngIf="form.controls.apellidos.touched && form.controls.apellidos.invalid">Requerido (máx 120)</small>
-          </div>
-          <div class="form-field">
-            <label>Edad</label>
-            <input class="input" formControlName="edad" type="number" />
-          </div>
-          <div class="form-field">
-            <label>Género</label>
-            <select class="input select" formControlName="generoId">
-              <option value="" disabled selected>Seleccione…</option>
-              <option *ngFor="let g of generos" [value]="g.id">{{ g.nombre }}</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Tipo de Documento</label>
-            <select class="input select" formControlName="tipoDocumentoIdentidad">
-              <option value="" disabled selected>Seleccione…</option>
-              <option *ngFor="let t of tiposDoc" [value]="t.id">{{ t.nombre }}</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Número Documento</label>
-            <input class="input" formControlName="numeroDocumento" />
-          </div>
-          <div class="form-field">
-            <label>Email</label>
-            <input class="input" formControlName="email" type="email" />
-          </div>
-          <div class="form-field">
-            <label>Password</label>
-            <input class="input" formControlName="password" type="password" />
-          </div>
-          <div style="margin-top:12px; display:flex; gap:8px;">
-            <button class="btn btn-primary" type="submit" [disabled]="form.invalid">Guardar</button>
-            <button class="btn" type="button" (click)="closeModal()">Cancelar</button>
-          </div>
-        </form>
-      </app-modal>
+      <!-- Se reemplaza el modal por páginas dedicadas de creación/edición -->
     </section>
   `,
   styles: [
     `
-      .btn-primary { background: var(--accent); border: 1px solid #e5cc18; padding: 8px 16px; border-radius: 4px; cursor:pointer; }
+      
       .table { border:1px solid #eee; border-radius:4px; background:#fff; }
       .thead, .rowt { display:grid; grid-template-columns: 2fr 1fr 2fr 1fr 1.2fr; gap:8px; padding:10px; align-items:center; }
       .thead { background:#f7f7f7; font-weight:600; border-bottom:1px solid #eee; }
@@ -112,6 +69,7 @@ export class ClientesListPageComponent {
   tamano = 10;
   private search$ = new Subject<string>();
   private q = '';
+  soloActivos = true;
   showModal = false;
   isEdit = false;
   editId: string | null = null;
@@ -119,7 +77,7 @@ export class ClientesListPageComponent {
   generos: CatalogoItem[] = [];
   tiposDoc: CatalogoItem[] = [];
 
-  constructor(private api: ClientesService, private fb: FormBuilder, private cat: CatalogosService) {
+  constructor(private api: ClientesService, private fb: FormBuilder, private cat: CatalogosService, private router: Router) {
     // Búsqueda reactiva con pequeño debounce
     this.search$
       .pipe(
@@ -147,7 +105,8 @@ export class ClientesListPageComponent {
   }
 
   load() {
-    this.api.list(this.pagina, this.tamano, this.q).subscribe(res => (this.items = res.items || []));
+    const estado = this.soloActivos ? true : false;
+    this.api.list(this.pagina, this.tamano, this.q, estado).subscribe(res => (this.items = res.items || []));
   }
   onSearch(ev: Event) {
     const v = (ev.target as HTMLInputElement).value || '';
@@ -162,36 +121,12 @@ export class ClientesListPageComponent {
       .then(r => { if (r.isConfirmed) this.api.delete(c.clienteId).subscribe(() => this.load()); });
   }
 
-  // Modal helpers
-  openNew() {
-    this.isEdit = false; this.editId = null;
-    this.form.reset({ edad: 18 });
-    // Habilitar edición del número documento para creación
-    this.form.get('numeroDocumento')?.enable({ emitEvent: false });
-    this.showModal = true;
-  }
-  openEdit(c: ClienteListItem, ev: Event) {
-    ev.preventDefault();
-    this.isEdit = true; this.editId = c.clienteId;
-    // Inhabilitar edición del número documento en edición
-    this.form.get('numeroDocumento')?.disable({ emitEvent: false });
-    this.form.patchValue({
-      nombres: c.nombres,
-      apellidos: c.apellidos,
-      edad: c.edad,
-      generoId: (c as any).generoId || '',
-      tipoDocumentoIdentidad: (c as any).tipoDocumentoIdentidadId || '',
-      numeroDocumento: c.numeroDocumento,
-      email: c.email || ''
-    });
-    this.showModal = true;
-  }
-  closeModal() { this.showModal = false; }
-  saveForm() {
-    if (this.form.invalid) return;
-    // Incluir campos deshabilitados (numeroDocumento) al enviar
-    const value = this.form.getRawValue() as any;
-    const op = this.isEdit && this.editId ? this.api.updatePut(this.editId, value) : this.api.create(value);
-    op.subscribe(() => { this.showModal = false; this.load(); });
+  // Navegación a páginas dedicadas (sin modal)
+  openNew() { this.router.navigateByUrl('/clientes/nuevo'); }
+  openEdit(c: ClienteListItem, ev: Event) { ev.preventDefault(); this.router.navigateByUrl(`/clientes/${c.clienteId}/editar`); }
+
+  toggleSoloActivos(ev: Event) {
+    this.soloActivos = (ev.target as HTMLInputElement).checked;
+    this.load();
   }
 }

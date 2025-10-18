@@ -1,9 +1,9 @@
-using System.Net;
-using System.Net.Http.Json;
-using Bancalite.Persitence;
 using Bancalite.Domain;
+using Bancalite.Persitence;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace Tests.Unit.Movimientos;
 
@@ -258,7 +258,7 @@ public class MovimientosControllerTests : IClassFixture<MovimientosWebApiFactory
         r1.IsSuccessStatusCode.Should().BeTrue();
         r2.StatusCode.Should().Be((HttpStatusCode)422);
     }
-// Tipos locales para mapear respuestas
+    // Tipos locales para mapear respuestas
     private class ApiResult<T> { public bool IsSuccess { get; set; } public T? Datos { get; set; } public string? Error { get; set; } }
     private class CuentaDto { public Guid CuentaId { get; set; } public string NumeroCuenta { get; set; } = string.Empty; }
     private class MovimientoDto { public Guid MovimientoId { get; set; } public Guid CuentaId { get; set; } public string NumeroCuenta { get; set; } = string.Empty; public string TipoCodigo { get; set; } = string.Empty; public decimal Monto { get; set; } public decimal SaldoPrevio { get; set; } public decimal SaldoPosterior { get; set; } public DateTime Fecha { get; set; } }

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentValidation;
 
 namespace Bancalite.Application.Auth.Login
@@ -11,7 +7,7 @@ namespace Bancalite.Application.Auth.Login
     /// Solo valida formato y requeridos.
     /// La existencia del usuario y la contraseña se validan en el handler.
     /// </summary>
-    public class LoginValidator: AbstractValidator<LoginRequest>
+    public class LoginValidator : AbstractValidator<LoginRequest>
     {
         /// <summary>
         /// Crea una nueva instancia del validador de login.

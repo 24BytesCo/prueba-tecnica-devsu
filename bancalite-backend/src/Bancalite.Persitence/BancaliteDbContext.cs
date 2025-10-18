@@ -1,12 +1,9 @@
-using System;
-using System.Linq;
-using System.IO;
-using System.Text.Json;
 using Bancalite.Domain;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Bancalite.Persitence.Model;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Bancalite.Persitence
 {
@@ -25,7 +22,7 @@ namespace Bancalite.Persitence
         public DbSet<TipoDocumentoIdentidad> TiposDocumentoIdentidad { get; set; } = null!;
         public DbSet<TipoMovimiento> TiposMovimiento { get; set; } = null!;
         public DbSet<Genero> Generos { get; set; } = null!;
-        
+
         // Configuración de la conexión (Postgres)
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -37,7 +34,7 @@ namespace Bancalite.Persitence
                 {
                     var host = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
                     var port = Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
-                    var db   = Environment.GetEnvironmentVariable("DB_NAME") ?? "bancalite";
+                    var db = Environment.GetEnvironmentVariable("DB_NAME") ?? "bancalite";
                     var user = Environment.GetEnvironmentVariable("DB_USER") ?? "admin";
                     var pass = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? string.Empty;
 

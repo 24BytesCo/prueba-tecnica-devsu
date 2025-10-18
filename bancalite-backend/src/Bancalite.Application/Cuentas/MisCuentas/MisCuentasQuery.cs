@@ -1,15 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
 using Bancalite.Application.Core;
 using Bancalite.Application.Cuentas.CuentaList;
 using Bancalite.Application.Interface;
 using Bancalite.Persitence;
-using Microsoft.EntityFrameworkCore;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bancalite.Application.Cuentas.MisCuentas
 {

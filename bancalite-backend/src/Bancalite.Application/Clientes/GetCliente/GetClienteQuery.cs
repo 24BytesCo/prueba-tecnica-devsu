@@ -1,13 +1,9 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Bancalite.Persitence;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using Bancalite.Application.Core;
 using Bancalite.Application.Interface;
+using Bancalite.Persitence;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bancalite.Application.Clientes.GetCliente
 {

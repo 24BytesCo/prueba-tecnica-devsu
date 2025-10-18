@@ -1,27 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Bancalite.Application.Auth.Login;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using static Bancalite.Application.Auth.Login.LoginCommand;
-using Microsoft.Extensions.Hosting;
-using Bancalite.Application.Auth.ForgotPassword;
-using Bancalite.Application.Auth.ResetPassword;
-using Bancalite.Application.Auth.Refresh;
-using Bancalite.Application.Auth.Logout;
-using Bancalite.Application.Auth.Me;
-using Microsoft.AspNetCore.Authorization;
-using Bancalite.Application.Core;
 using Bancalite.Application.Auth;
-using static Bancalite.Application.Auth.Refresh.RefreshTokenCommand;
+using Bancalite.Application.Auth.ForgotPassword;
+using Bancalite.Application.Auth.Login;
+using Bancalite.Application.Auth.Refresh;
+using Bancalite.Application.Auth.ResetPassword;
+using Bancalite.Application.Core;
+using Bancalite.WebApi.Extensions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Net;
+using static Bancalite.Application.Auth.ForgotPassword.ForgotPasswordCommand;
+using static Bancalite.Application.Auth.Login.LoginCommand;
 using static Bancalite.Application.Auth.Logout.LogoutCommand;
 using static Bancalite.Application.Auth.Me.MeQuery;
+using static Bancalite.Application.Auth.Refresh.RefreshTokenCommand;
 using static Bancalite.Application.Auth.ResetPassword.ResetPasswordCommand;
-using static Bancalite.Application.Auth.ForgotPassword.ForgotPasswordCommand;
-using Bancalite.WebApi.Extensions;
 
 namespace Bancalite.WebApi.Controllers
 {
