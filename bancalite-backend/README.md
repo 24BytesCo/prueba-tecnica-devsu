@@ -50,7 +50,7 @@ Backend de Bancalite construido con ASP.NET Core (net9), EF Core (PostgreSQL), I
 ### Report (branding PDF)
 
 - `Report:BrandName`: nombre que aparece en el encabezado del PDF (p. ej., "Bancalite").
-- `Report:AccentColor`: color acento en formato HEX (p. ej., `#F44336`).
+- `Report:AccentColor`: color acento en formato HEX (p. ej., `#095177`). Si no se configura, el acento por defecto es `#095177`.
 - `Report:LogoPath`: reservado para futuro uso de logotipo.
 
 ### SMTP (IEmailSender)
@@ -181,6 +181,30 @@ Endpoints y reglas principales del módulo Movimientos:
 - `GET /api/movimientos?numeroCuenta=&desde=&hasta=`
   - Lista movimientos por número de cuenta y rango de fechas (UTC, [desde, hasta)).
   - Seguridad: `Authorize`. Admin o propietario de la cuenta.
+
+## Reportes (API)
+
+Endpoints para Estado de Cuenta (JSON/PDF):
+
+- `GET /api/reportes`
+  - Devuelve el DTO `EstadoCuentaDto` (JSON) con totales, saldos y lista de movimientos.
+  - Parámetros: `clienteId?`, `numeroCuenta?`, `desde` (ISO), `hasta` (ISO). Debe indicarse `clienteId` o `numeroCuenta`.
+  - Seguridad: `Authorize`. Admin o propietario.
+
+- `GET /api/reportes/pdf`
+  - Descarga el reporte como PDF (attachment). Usa QuestPDF.
+
+- `GET /api/reportes/pdf-base64`
+  - Devuelve `{ fileName, contentType, base64 }` del PDF.
+
+- `GET /api/reportes/json`
+  - Descarga el JSON del reporte como archivo `.json` (attachment). Útil para cumplir requerimiento de exportación JSON.
+
+Detalles del PDF:
+- Encabezado con FECHA (es-ES, mayúsculas), TITULAR (mayúsculas), DOCUMENTO y Nº.
+- Si el reporte incluye varias cuentas: título "CONSOLIDADO — N CUENTAS", tabla general con columna NÚMERO y, debajo, secciones por cada cuenta con subtítulo y subresumen (créditos/débitos/saldo inicial/final).
+- Si el cliente está inactivo: watermark "USUARIO INACTIVO".
+- Estilo sobrio (headers sin color, mayor espaciado vertical) y color de acento configurable.
 
 ### Configuración de Movimientos
 
