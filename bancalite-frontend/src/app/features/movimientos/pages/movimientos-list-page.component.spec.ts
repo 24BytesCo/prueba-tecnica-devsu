@@ -5,6 +5,7 @@ import { CuentasService } from '../../../core/services/cuentas.service';
 import { CatalogosService } from '../../../core/services/catalogos.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { of } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() } }));
 
@@ -25,7 +26,8 @@ describe('MovimientosListPageComponent (Jest)', () => {
         { provide: CuentasService, useValue: { list: listCtasSpy } },
         { provide: CatalogosService, useValue: { tiposMovimiento: () => of([]) } },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
-        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } }
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 

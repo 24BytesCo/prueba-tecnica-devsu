@@ -6,6 +6,8 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { CuentaListItem } from '../../../shared/models/cuentas.models';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -13,7 +15,7 @@ import { CuentaListItem } from '../../../shared/models/cuentas.models';
       <div class="row">
         <h1 class="brand">Movimientos</h1>
         <span class="spacer"></span>
-        <button class="btn btn-primary btn-lg" (click)="openNew()">Nuevo</button>
+        <button class="btn btn-primary btn-lg" (click)="openNew()" [disabled]="clienteInactivo">Nuevo</button>
       </div>
 
       <div class="row filters" style="gap:12px; align-items:center; margin: 12px 0; flex-wrap: wrap;">
@@ -79,12 +81,14 @@ export class MovimientosListPageComponent {
   hasta: string | null = null;
   tipoFiltro: string = '';
   q = '';
+  clienteInactivo = false;
+  isAdmin = false;
 
   private search$ = new Subject<void>();
   sugerencias: CuentaListItem[] = [];
   private suggest$ = new Subject<string>();
 
-  constructor(private api: MovimientosService, private cat: CatalogosService, private router: Router, private route: ActivatedRoute, private cuentas: CuentasService) {
+  constructor(private api: MovimientosService, private cat: CatalogosService, private router: Router, private route: ActivatedRoute, private cuentas: CuentasService, private store: Store) {
     this.cat.tiposMovimiento().subscribe(list => (this.tipos = list));
     this.search$.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.load());
     const qNumero = this.route.snapshot.queryParamMap.get('numeroCuenta');
@@ -97,9 +101,33 @@ export class MovimientosListPageComponent {
       switchMap(q => {
         const term = (q || '').trim();
         if (!term) { this.sugerencias = []; }
-        return this.cuentas.list(1, 5, { q: term, activo: true, clientesActivos: true });
+        // Para Admin sugerimos solo activas; para User mostramos todas sus cuentas (activas o inactivas)
+        const filtros = this.isAdmin
+          ? { q: term, activo: true, clientesActivos: true }
+          : { q: term } as any;
+        return this.cuentas.list(1, 5, filtros);
       })
     ).subscribe(res => this.sugerencias = res?.items || []);
+
+    // Estado del cliente del usuario actual
+    this.store.select(authFeature.selectClienteActivo).subscribe(act => this.clienteInactivo = act === false);
+
+    // Rol para decidir filtros de sugerencias
+    this.store.select(authFeature.selectCodeRol).subscribe(code => {
+      this.isAdmin = (code || '').toLowerCase() === 'admin';
+      // Si es User y no hay numero de cuenta en query, preseleccionar si solo tiene una
+      if (!this.isAdmin) {
+        // No sobreescribir si ya hay número desde query
+        if (!this.numeroCuenta) {
+          this.cuentas.list(1, 2, {}).subscribe(p => {
+            if (!this.numeroCuenta && p?.total === 1 && p.items?.length === 1) {
+              this.numeroCuenta = p.items[0].numeroCuenta;
+              this.load();
+            }
+          });
+        }
+      }
+    });
   }
 
   openNew() {

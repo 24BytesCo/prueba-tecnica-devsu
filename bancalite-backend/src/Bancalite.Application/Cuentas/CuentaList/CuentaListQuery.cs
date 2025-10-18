@@ -27,8 +27,8 @@ namespace Bancalite.Application.Cuentas.CuentaList
             Guid? ClienteId = null,
             string? Estado = null,
             string? Q = null,
-            bool Activo = true,
-            bool ClientesActivos = true
+            bool? Activo = null,
+            bool? ClientesActivos = null
         ) : IRequest<Result<Paged<CuentaListItem>>>;
 
         internal class Handler : IRequestHandler<CuentaListQueryRequest, Result<Paged<CuentaListItem>>>
@@ -76,23 +76,21 @@ namespace Bancalite.Application.Cuentas.CuentaList
                 }
 
                 // Filtro de activo (enum) si se especifica por bandera Activo
-                if (request.Activo)
+                if (request.Activo.HasValue)
                 {
-                    query = query.Where(c => c.Estado == Domain.EstadoCuenta.Activa);
-                }
-                else
-                {
-                    query = query.Where(c => c.Estado == Domain.EstadoCuenta.Inactiva);
+                    if (request.Activo.Value)
+                        query = query.Where(c => c.Estado == Domain.EstadoCuenta.Activa);
+                    else
+                        query = query.Where(c => c.Estado == Domain.EstadoCuenta.Inactiva);
                 }
 
                 // Filtro por clientes activos/inactivos
-                if (request.ClientesActivos)
+                if (request.ClientesActivos.HasValue)
                 {
-                    query = query.Where(c => c.Cliente.Estado == true);
-                }
-                else
-                {
-                    query = query.Where(c => c.Cliente.Estado == false);
+                    if (request.ClientesActivos.Value)
+                        query = query.Where(c => c.Cliente.Estado == true);
+                    else
+                        query = query.Where(c => c.Cliente.Estado == false);
                 }
 
                 // Búsqueda compuesta por Q

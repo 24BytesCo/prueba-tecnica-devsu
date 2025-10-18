@@ -69,6 +69,29 @@ body {
   background: var(--accent-600);
 }
 
+/* Estados deshabilitados (accesibles y evidentes) */
+.btn:disabled,
+.btn[disabled],
+.btn-primary:disabled,
+.btn-primary[disabled],
+.btn-ghost:disabled,
+.btn-ghost[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: saturate(0.7);
+}
+
+/* Evitar efecto hover cuando está deshabilitado */
+.btn:disabled:hover,
+.btn[disabled]:hover,
+.btn-primary:disabled:hover,
+.btn-primary[disabled]:hover,
+.btn-ghost:disabled:hover,
+.btn-ghost[disabled]:hover {
+  background: inherit;
+  text-decoration: none;
+}
+
 .btn-ghost {
   background: transparent;
   border-color: transparent;

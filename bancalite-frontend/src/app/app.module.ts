@@ -10,6 +10,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { authReducer } from './core/state/auth/auth.reducer';
 import { AuthEffects } from './core/state/auth/auth.effects';
 import { environment } from '../environments/environment';
+import { hydrationMetaReducer } from './core/state/hydration.meta-reducer';
 
 @NgModule({
   declarations: [AppComponent],
@@ -18,7 +19,7 @@ import { environment } from '../environments/environment';
     CoreModule,
     LayoutModule,
     // Wiring básico de NgRx: store raíz + efectos + devtools
-    StoreModule.forRoot({ auth: authReducer }),
+    StoreModule.forRoot({ auth: authReducer }, { metaReducers: [hydrationMetaReducer] }),
     EffectsModule.forRoot([AuthEffects]),
     StoreDevtoolsModule.instrument({ maxAge: 25, logOnly: environment.production }),
     AppRoutingModule

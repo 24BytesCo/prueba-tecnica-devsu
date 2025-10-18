@@ -10,6 +10,7 @@ export class AuthEffects {
   login$;
   loginSuccessNavigate$;
   logout$;
+  fetchMe$;
 
   constructor(private actions$: Actions, private auth: AuthService, private router: Router) {
     // Efecto de login: escucha la acción Login, llama al servicio y emite Success/Failure
@@ -37,6 +38,20 @@ export class AuthEffects {
           tap(() => this.router.navigateByUrl('/'))
         ),
       { dispatch: false }
+    );
+
+    // Tras login success, solicitar /auth/me para obtener codeRol (Admin/User)
+    this.fetchMe$ = createEffect(() =>
+      this.actions$.pipe(
+        ofType(AuthActions.loginSuccess),
+        switchMap(() =>
+          this.auth.me().pipe(
+            map(profile => AuthActions.meSuccess({ profile })),
+            // Si /me falla o devuelve nulos, continuamos sin romper el flujo
+            catchError(() => of(AuthActions.meSuccess({ profile: { codeRol: null } as any })))
+          )
+        )
+      )
     );
 
     // Al hacer logout limpiamos tokens y enviamos al login

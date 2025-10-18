@@ -4,6 +4,7 @@ using Bancalite.Application.Reportes.EstadoCuenta;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using QuestPDF.Drawing;
 using System.Globalization;
 
 namespace Bancalite.Infraestructure.Report
@@ -52,12 +53,7 @@ namespace Bancalite.Infraestructure.Report
                     var numeroHeader = !string.IsNullOrWhiteSpace(dto.NumeroCuenta) ? dto.NumeroCuenta : (cuentas.Count == 1 ? cuentas[0] : null);
                     var esMultiCuenta = cuentas.Count > 1;
 
-                    // Marca de agua si el cliente está inactivo
-                    if (dto.ClienteActivo.HasValue && dto.ClienteActivo.Value == false)
-                    {
-                        page.Background().AlignCenter().AlignMiddle().Text("USUARIO INACTIVO")
-                            .FontSize(60).SemiBold().FontColor(Colors.Grey.Lighten2);
-                    }
+                    var drawWatermark = dto.ClienteActivo.HasValue && dto.ClienteActivo.Value == false;
 
                     // Encabezado estilo extracto
                     page.Header().Background(softHeader).Padding(18).Column(h =>
@@ -100,6 +96,7 @@ namespace Bancalite.Infraestructure.Report
                         h.Item().AlignRight().Text(_brand).FontColor(lightText);
                     });
 
+                    // Contenido principal: aplicar marca de agua sobre cada tabla cuando corresponda
                     page.Content().PaddingTop(12).Column(col =>
                     {
                         if (esMultiCuenta)
@@ -108,13 +105,32 @@ namespace Bancalite.Infraestructure.Report
                             var preview = string.Join(", ", cuentas.Take(3));
                             var suffix = cuentas.Count > 3 ? ", …" : string.Empty;
 
-                            //Espacio de separación de 5px
+                            //Espacio de separación de 20px
                             col.Item().PaddingTop(20);
                             col.Item().PaddingBottom(6)
                                 .Text($"CONSOLIDADO — {cuentas.Count} CUENTAS ({preview}{suffix})").SemiBold();
 
                             // Tabla general (todas las cuentas)
-                            col.Item().Element(TablaGeneral);
+                            col.Item().Element(c =>
+                            {
+                                if (drawWatermark)
+                                {
+                                    c.Layers(l =>
+                                    {
+                                        l.PrimaryLayer().Element(TablaGeneral);
+                                        // sombra sutil para dar contorno
+                                        l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
+                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
+                                        // texto principal en rojo tenue
+                                        l.Layer().AlignCenter().AlignMiddle()
+                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                    });
+                                }
+                                else
+                                {
+                                    c.Element(TablaGeneral);
+                                }
+                            });
                             // Totales generales inmediatamente debajo de la tabla general
                             col.Item().PaddingTop(6).Element(ResumenPie);
                             // Tablas por cuenta
@@ -124,7 +140,24 @@ namespace Bancalite.Infraestructure.Report
                                 if (movsCuenta.Count == 0) continue;
                                 col.Item().PaddingTop(28)
                                     .Text($"Cuenta {n}").SemiBold();
-                                col.Item().Element(c => TablaPorCuenta(c, movsCuenta));
+                                col.Item().Element(c =>
+                                {
+                                    if (drawWatermark)
+                                    {
+                                        c.Layers(l =>
+                                        {
+                                            l.PrimaryLayer().Element(cc => TablaPorCuenta(cc, movsCuenta));
+                                            l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
+                                                .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
+                                            l.Layer().AlignCenter().AlignMiddle()
+                                                .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                        });
+                                    }
+                                    else
+                                    {
+                                        c.Element(cc => TablaPorCuenta(cc, movsCuenta));
+                                    }
+                                });
                                 col.Item().PaddingTop(8).Element(c => SubResumenCuenta(c, movsCuenta));
                             }
                             // Totales generales ya se muestran debajo de la tabla general
@@ -132,7 +165,24 @@ namespace Bancalite.Infraestructure.Report
                         else
                         {
                             // Tabla de movimientos con estilo de extracto
-                            col.Item().Element(TablaExtracto);
+                            col.Item().Element(c =>
+                            {
+                                if (drawWatermark)
+                                {
+                                    c.Layers(l =>
+                                    {
+                                        l.PrimaryLayer().Element(TablaExtracto);
+                                        l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
+                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
+                                        l.Layer().AlignCenter().AlignMiddle()
+                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                    });
+                                }
+                                else
+                                {
+                                    c.Element(TablaExtracto);
+                                }
+                            });
                             // Línea de totales y saldos al final
                             col.Item().PaddingTop(12).Element(ResumenPie);
                         }

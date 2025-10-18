@@ -69,6 +69,10 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                         .Select(u => u.Id).FirstOrDefaultAsync(cancellationToken);
                     if (cliente.AppUserId == null || cliente.AppUserId != userId)
                         return Result<bool>.Failure("Forbidden");
+
+                    // Si el cliente está desactivado, no permitir que el propio usuario actualice
+                    if (cliente.Estado == false)
+                        return Result<bool>.Failure("El usuario está desactivado. Comuníquese con un administrador.");
                 }
 
                 // Validar unicidad de documento si cambió
@@ -162,6 +166,10 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                         .Select(u => u.Id).FirstOrDefaultAsync(cancellationToken);
                     if (cliente.AppUserId == null || cliente.AppUserId != userId)
                         return Result<bool>.Failure("Forbidden");
+
+                    // Si el cliente está desactivado, no permitir que el propio usuario actualice
+                    if (cliente.Estado == false)
+                        return Result<bool>.Failure("El usuario está desactivado. Comuníquese con un administrador.");
                 }
 
                 var p = cliente.Persona;

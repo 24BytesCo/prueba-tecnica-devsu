@@ -6,6 +6,7 @@ import { MovimientosService } from '../../../core/services/movimientos.service';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 // Mock de SweetAlert2 para evitar CSS injection y permitir asserts de error
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() } }));
@@ -26,7 +27,8 @@ describe('MovimientosFormPageComponent (Jest)', () => {
         { provide: MovimientosService, useValue: { create: createSpy } },
         { provide: CuentasService, useValue: { list: () => of({ pagina: 1, tamano: 5, total: 0, items: [] }) } },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => '2210' } } } },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 

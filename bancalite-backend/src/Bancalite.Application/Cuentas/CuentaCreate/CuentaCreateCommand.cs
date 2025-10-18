@@ -66,6 +66,14 @@ namespace Bancalite.Application.Cuentas.CuentaCreate
                             return Result<Guid>.Failure("Forbidden: Solo puede crear cuentas para su propio cliente");
                     }
 
+                    // Regla de negocio: no permitir apertura si el cliente está inactivo (aplica para Admin y no-Admin)
+                    var clienteDestino = await _context.Clientes.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Id == request.Request.ClienteId, cancellationToken);
+                    if (clienteDestino == null)
+                        return Result<Guid>.Failure("Cliente no existe");
+                    if (clienteDestino.Estado == false)
+                        return Result<Guid>.Failure("El usuario está desactivado");
+
                     // Si no envía número, generar uno automáticamente con formato ####-####-#### (12 dígitos)
                     var numeroCuenta = string.IsNullOrWhiteSpace(request.Request.NumeroCuenta)
                         ? await GenerarNumeroCuentaUnicoAsync(cancellationToken)

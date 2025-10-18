@@ -3,6 +3,7 @@ import { CuentasDetailPageComponent } from './cuentas-detail-page.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { of } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 describe('CuentasDetailPageComponent (Jest)', () => {
   let component: CuentasDetailPageComponent;
@@ -23,7 +24,8 @@ describe('CuentasDetailPageComponent (Jest)', () => {
       providers: [
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'id-123' } } } },
         { provide: CuentasService, useValue: { get: () => of(mockCuenta), movimientos: () => of([]) } },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 
@@ -39,4 +41,3 @@ describe('CuentasDetailPageComponent (Jest)', () => {
     expect(spy).toHaveBeenCalledWith(`/movimientos/nuevo?numeroCuenta=${encodeURIComponent(mockCuenta.numeroCuenta)}`);
   });
 });
-

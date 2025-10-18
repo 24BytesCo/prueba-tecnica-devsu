@@ -6,6 +6,8 @@ import { ClientesService } from '../../../core/services/clientes.service';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { CuentaListItem } from '../../../shared/models/cuentas.models';
 import { ClienteListItem } from '../../../shared/models/clientes.models';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -158,15 +160,43 @@ export class ReportesPageComponent {
   sugClientes: ClienteListItem[] = [];
   private cuentas$ = new Subject<string>();
   private clientes$ = new Subject<string>();
+  private isAdmin = false;
 
-  constructor(private reportes: ReportesService, private cuentas: CuentasService, private clientes: ClientesService) {
+  constructor(private reportes: ReportesService, private cuentas: CuentasService, private clientes: ClientesService, private store: Store) {
     this.cuentas$
-      .pipe(debounceTime(250), distinctUntilChanged(), switchMap(q => this.cuentas.list(1, 5, { q, activo: true, clientesActivos: true })))
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        switchMap(q => {
+          const term = (q || '').trim();
+          // Para Admin y User: mostrar cuentas sin filtrar por estado (incluye inactivas)
+          const filtros = { q: term } as any;
+          return this.cuentas.list(1, 5, filtros);
+        })
+      )
       .subscribe(res => this.sugCuentas = res?.items || []);
 
     this.clientes$
-      .pipe(debounceTime(250), distinctUntilChanged(), switchMap(q => this.clientes.list(1, 5, q, true)))
+      .pipe(
+        debounceTime(250),
+        distinctUntilChanged(),
+        // Admin: listar clientes sin filtrar estado; User: servicio devuelve su propio cliente
+        switchMap(q => this.clientes.list(1, 5, q))
+      )
       .subscribe(res => this.sugClientes = res?.items || []);
+    // Rol: si es User y solo tiene una cuenta, preseleccionar por defecto (modo cuenta)
+    this.store.select(authFeature.selectCodeRol).subscribe(code => {
+      this.isAdmin = (code || '').toLowerCase() === 'admin';
+      if (!this.isAdmin && this.modo === 'cuenta' && !this.numeroCuenta) {
+        this.cuentas.list(1, 2, {}).subscribe(p => {
+          if (p?.total === 1 && p.items?.length === 1) {
+            this.numeroCuenta = p.items[0].numeroCuenta;
+            // Mostrar por defecto
+            this.consultar();
+          }
+        });
+      }
+    });
   }
 
   setModo(m: 'cuenta' | 'cliente') { this.modo = m; this.resetSeleccion(); }

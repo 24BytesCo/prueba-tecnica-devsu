@@ -6,6 +6,8 @@ import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CatalogosService, CatalogoItem } from '../../../core/services/catalogos.service';
 import Swal from 'sweetalert2';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -13,9 +15,9 @@ import Swal from 'sweetalert2';
       <div class="row">
         <h1 class="brand">Clientes</h1>
         <span class="spacer"></span>
-        <button class="btn btn-primary btn-lg" (click)="openNew()">Nuevo</button>
+        <button class="btn btn-primary btn-lg" (click)="openNew()" *ngIf="!isUser">Nuevo</button>
       </div>
-      <div class="row" style="margin: 12px 0;">
+      <div class="row" style="margin: 12px 0;" *ngIf="!isUser">
         <div class="input-icon">
           <input class="input" (input)="onSearch($event)" placeholder="Buscar por nombre o documento" style="width:420px;" />
         </div>
@@ -37,9 +39,16 @@ import Swal from 'sweetalert2';
           <div>{{ c.email || '-' }}</div>
           <div>{{ c.estado ? 'Activo' : 'Inactivo' }}</div>
           <div style="text-align:right">
-            <a href (click)="openEdit(c, $event)">Editar</a>
+
+            <a href
+               (click)="openEdit(c, $event)"
+               [class.disabled]="isUser && !c.estado"
+               [attr.aria-disabled]="isUser && !c.estado">Editar</a>
             <span class="sep">|</span>
-            <a href (click)="remove(c, $event)">Eliminar</a>
+            <a href
+               (click)="remove(c, $event)"
+               [class.disabled]="isUser && !c.estado"
+               [attr.aria-disabled]="isUser && !c.estado">Eliminar</a>
           </div>
         </div>
       </div>
@@ -65,6 +74,8 @@ import Swal from 'sweetalert2';
       .input-icon { position: relative;  }
       .input-icon .icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; pointer-events: none; }
       .input-icon > .input { padding-right: 32px; }
+      a.disabled { pointer-events: none; opacity: .5; cursor: not-allowed; }
+      a.disabled:hover { text-decoration: none; }
     `
   ]
 })
@@ -81,8 +92,9 @@ export class ClientesListPageComponent {
   form: FormGroup;
   generos: CatalogoItem[] = [];
   tiposDoc: CatalogoItem[] = [];
+  isUser = false;
 
-  constructor(private api: ClientesService, private fb: FormBuilder, private cat: CatalogosService, private router: Router) {
+  constructor(private api: ClientesService, private fb: FormBuilder, private cat: CatalogosService, private router: Router, private store: Store) {
     // Búsqueda reactiva con pequeño debounce
     this.search$
       .pipe(
@@ -107,6 +119,11 @@ export class ClientesListPageComponent {
     // Cargar catálogos para selects
     this.cat.generos().subscribe(list => (this.generos = list));
     this.cat.tiposDocumento().subscribe(list => (this.tiposDoc = list));
+
+    // Determinar rol para deshabilitar acciones en User + cliente inactivo
+    this.store.select(authFeature.selectCodeRol).subscribe(code => {
+      this.isUser = (code || '').toLowerCase() === 'user';
+    });
   }
 
   load() {
@@ -122,13 +139,18 @@ export class ClientesListPageComponent {
   next() { this.pagina++; this.load(); }
   remove(c: ClienteListItem, ev: Event) {
     ev.preventDefault();
+    if (this.isUser && !c.estado) return;
     Swal.fire({ icon:'warning', title:'Eliminar', text:`¿Eliminar a ${c.nombres} ${c.apellidos}?`, showCancelButton:true, confirmButtonText:'Sí, eliminar' })
       .then(r => { if (r.isConfirmed) this.api.delete(c.clienteId).subscribe(() => this.load()); });
   }
 
   // Navegación a páginas dedicadas (sin modal)
   openNew() { this.router.navigateByUrl('/clientes/nuevo'); }
-  openEdit(c: ClienteListItem, ev: Event) { ev.preventDefault(); this.router.navigateByUrl(`/clientes/${c.clienteId}/editar`); }
+  openEdit(c: ClienteListItem, ev: Event) { 
+    ev.preventDefault(); 
+    if (this.isUser && !c.estado) return; 
+    this.router.navigateByUrl(`/clientes/${c.clienteId}/editar`); 
+  }
 
   toggleSoloActivos(ev: Event) {
     this.soloActivos = (ev.target as HTMLInputElement).checked;

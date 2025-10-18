@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClientesService } from '../../../core/services/clientes.service';
 import { CatalogosService, CatalogoItem } from '../../../core/services/catalogos.service';
+import Swal from 'sweetalert2';
 
 @Component({
   template: `
@@ -109,9 +110,15 @@ export class ClientesFormPageComponent {
     if (this.form.invalid) return;
     const value = this.form.getRawValue() as any; // incluye número doc si está deshabilitado
     const op = this.isEdit && this.id ? this.api.updatePut(this.id, value) : this.api.create(value);
-    op.subscribe(() => this.router.navigateByUrl('/clientes'));
+    op.subscribe({
+      next: () => this.router.navigateByUrl('/clientes'),
+      error: err => {
+        const detail = err?.error?.detail || err?.error?.title || 'No se pudo guardar.';
+        const title = 'Error al guardar';
+        Swal.fire({ icon: 'error', title, text: detail });
+      }
+    });
   }
 
   cancel() { this.router.navigateByUrl('/clientes'); }
 }
-

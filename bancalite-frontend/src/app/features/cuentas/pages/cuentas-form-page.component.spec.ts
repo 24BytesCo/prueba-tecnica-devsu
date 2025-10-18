@@ -6,6 +6,7 @@ import { CatalogosService } from '../../../core/services/catalogos.service';
 import { ClientesService } from '../../../core/services/clientes.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 describe('CuentasFormPageComponent (Jest)', () => {
   let component: CuentasFormPageComponent;
@@ -37,7 +38,8 @@ describe('CuentasFormPageComponent (Jest)', () => {
         { provide: CatalogosService, useValue: mockCatalogos },
         { provide: ClientesService, useValue: mockClientes },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: (_: string) => null } } } },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 
