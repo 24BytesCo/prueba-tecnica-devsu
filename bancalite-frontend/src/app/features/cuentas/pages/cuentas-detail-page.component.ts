@@ -9,6 +9,7 @@ import { MovimientoItem } from '../../../shared/models/cuentas.models';
       <div class="row">
         <h1 class="brand">Detalle de Cuenta</h1>
         <span class="spacer"></span>
+        <button class="btn" (click)="nuevoMovimiento()" *ngIf="cuenta">Nuevo movimiento</button>
         <button class="btn" (click)="back()">Volver</button>
       </div>
 
@@ -79,4 +80,5 @@ export class CuentasDetailPageComponent {
   }
 
   back() { this.router.navigateByUrl('/cuentas'); }
+  nuevoMovimiento() { if (this.cuenta?.numeroCuenta) this.router.navigateByUrl(`/movimientos/nuevo?numeroCuenta=${encodeURIComponent(this.cuenta.numeroCuenta)}`); }
 }
