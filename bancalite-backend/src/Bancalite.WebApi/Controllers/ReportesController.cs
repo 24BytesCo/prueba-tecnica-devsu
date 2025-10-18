@@ -1,11 +1,9 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Interface;
 using Bancalite.Application.Reportes.EstadoCuenta;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using static Bancalite.Application.Reportes.EstadoCuenta.EstadoCuentaQuery;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -32,7 +30,7 @@ namespace Bancalite.WebApi.Controllers
         public async Task<ActionResult<EstadoCuentaDto>> Get([FromQuery] Guid? clienteId, [FromQuery] string? numeroCuenta, [FromQuery] DateTime desde, [FromQuery] DateTime hasta, CancellationToken ct)
         {
             var req = new EstadoCuentaRequest { ClienteId = clienteId, NumeroCuenta = numeroCuenta, Desde = desde, Hasta = hasta };
-            var result = await _sender.Send(new EstadoCuentaQuery.EstadoCuentaQueryRequest(req), ct);
+            var result = await _sender.Send(new EstadoCuentaQueryRequest(req), ct);
             if (!result.IsSuccess) return Problem(statusCode: StatusCodeFromError(result.Error), title: result.Error);
             return Ok(result.Datos);
         }
@@ -45,7 +43,7 @@ namespace Bancalite.WebApi.Controllers
         public async Task<IActionResult> GetPdf([FromQuery] Guid? clienteId, [FromQuery] string? numeroCuenta, [FromQuery] DateTime desde, [FromQuery] DateTime hasta, CancellationToken ct)
         {
             var req = new EstadoCuentaRequest { ClienteId = clienteId, NumeroCuenta = numeroCuenta, Desde = desde, Hasta = hasta };
-            var result = await _sender.Send(new EstadoCuentaQuery.EstadoCuentaQueryRequest(req), ct);
+            var result = await _sender.Send(new EstadoCuentaQueryRequest(req), ct);
             if (!result.IsSuccess) return Problem(statusCode: StatusCodeFromError(result.Error), title: result.Error);
 
             var bytes = await _pdf.RenderEstadoCuentaAsync(result.Datos!, ct);

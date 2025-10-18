@@ -1,9 +1,7 @@
-using System.Net;
-using System.Net.Mail;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Interface;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Mail;
 
 namespace Bancalite.Infraestructure.Email
 {

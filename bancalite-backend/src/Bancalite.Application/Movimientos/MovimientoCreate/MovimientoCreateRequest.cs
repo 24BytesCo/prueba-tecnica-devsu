@@ -1,5 +1,3 @@
-using System;
-
 namespace Bancalite.Application.Movimientos.MovimientoCreate
 {
     /// <summary>

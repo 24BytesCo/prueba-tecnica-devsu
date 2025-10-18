@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Core;
 using Bancalite.Application.Movimientos.MovimientoCreate;
-using Bancalite.Application.Movimientos.MovimientoList;
 using Bancalite.WebApi.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +17,10 @@ namespace Bancalite.WebApi.Controllers
     public class MovimientosController : ControllerBase
     {
         private readonly ISender _sender;
-        public MovimientosController(ISender sender) { _sender = sender; }
+        public MovimientosController(ISender sender)
+        {
+            _sender = sender;
+        }
 
         /// <summary>
         /// Registra un movimiento (Crédito/Débito) aplicando reglas de negocio.

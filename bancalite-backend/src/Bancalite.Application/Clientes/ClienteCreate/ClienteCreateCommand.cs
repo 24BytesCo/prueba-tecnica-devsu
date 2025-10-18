@@ -1,15 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Bancalite.Persitence;
-using Bancalite.Domain;
-using FluentValidation;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
-using Bancalite.Persitence.Model;
 using Bancalite.Application.Core;
+using Bancalite.Domain;
+using Bancalite.Persitence;
+using Bancalite.Persitence.Model;
+using MediatR;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bancalite.Application.Clientes.ClienteCreate
 {
@@ -61,8 +56,8 @@ namespace Bancalite.Application.Clientes.ClienteCreate
                     var persona = new Persona
                     {
                         Id = Guid.NewGuid(),
-                        Nombres = request.clienteCreateRequest.Nombres!.Trim(), 
-                        Apellidos = request.clienteCreateRequest.Apellidos!.Trim(), 
+                        Nombres = request.clienteCreateRequest.Nombres!.Trim(),
+                        Apellidos = request.clienteCreateRequest.Apellidos!.Trim(),
                         Edad = request.clienteCreateRequest.Edad,
                         GeneroId = request.clienteCreateRequest.GeneroId!.Value,
                         TipoDocumentoIdentidadId = request.clienteCreateRequest.TipoDocumentoIdentidad,

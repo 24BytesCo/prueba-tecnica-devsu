@@ -1,18 +1,16 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using Bancalite.Application.Interface;
 using Bancalite.Persitence;
+using Bancalite.Persitence.Model;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Identity;
-using Bancalite.Persitence.Model;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Tests.Unit.Auth;
 

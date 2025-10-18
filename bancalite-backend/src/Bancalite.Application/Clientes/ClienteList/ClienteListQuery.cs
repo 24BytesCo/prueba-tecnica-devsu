@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using AutoMapper;
+using Bancalite.Application.Core;
 using Bancalite.Persitence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Bancalite.Application.Core;
 
 namespace Bancalite.Application.Clientes.ClienteList
 {
@@ -37,7 +30,7 @@ namespace Bancalite.Application.Clientes.ClienteList
         /// <summary>
         /// Manejador de la consulta de clientes.
         /// </summary>
-        internal class Handler : IRequestHandler<ClienteListQueryRequest, Result<Paged<ClienteListItem>>> 
+        internal class Handler : IRequestHandler<ClienteListQueryRequest, Result<Paged<ClienteListItem>>>
         {
             private readonly BancaliteContext _context;
             private readonly IMapper _mapeador;

@@ -18,5 +18,12 @@ export class CatalogosService {
   tiposDocumento(): Observable<CatalogoItem[]> {
     return this.http.get<ApiResult<CatalogoItem[]>>(`${this.baseUrl}/catalogos/tipos-documento`).pipe(map(r => r.datos));
   }
-}
 
+  tiposCuenta(): Observable<CatalogoItem[]> {
+    return this.http.get<ApiResult<CatalogoItem[]>>(`${this.baseUrl}/catalogos/tipos-cuenta`).pipe(map(r => r.datos));
+  }
+
+  tiposMovimiento(): Observable<CatalogoItem[]> {
+    return this.http.get<ApiResult<CatalogoItem[]>>(`${this.baseUrl}/catalogos/tipos-movimiento`).pipe(map(r => r.datos));
+  }
+}

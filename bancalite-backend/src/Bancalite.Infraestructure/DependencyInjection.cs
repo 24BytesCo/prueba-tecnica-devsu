@@ -1,17 +1,15 @@
+using Bancalite.Application.Config;
+using Bancalite.Application.Interface;
+using Bancalite.Infraestructure.Email;
+using Bancalite.Infraestructure.Report;
+using Bancalite.Infraestructure.Security;
+using Bancalite.Infraestructure.Startup;
 using Bancalite.Persitence;
+using Bancalite.Persitence.Model;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Bancalite.Infraestructure.Startup;
-using Microsoft.AspNetCore.Identity;
-using Bancalite.Persitence.Model;
-using Bancalite.Application.Interface;
-using Bancalite.Infraestructure.Security;
-using Microsoft.Extensions.Options;
-using Bancalite.Infraestructure.Email;
-using Bancalite.Application.Config;
-using Bancalite.Application.Interface;
-using Bancalite.Infraestructure.Report;
 
 namespace Bancalite.Infraestructure;
 

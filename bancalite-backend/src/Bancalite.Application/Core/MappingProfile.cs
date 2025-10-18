@@ -1,17 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AutoMapper;
-using Bancalite.Domain;
 using Bancalite.Application.Clientes.ClienteList;
 using Bancalite.Application.Clientes.GetCliente;
 using Bancalite.Application.Cuentas.CuentaList;
 using Bancalite.Application.Cuentas.CuentaResponse;
+using Bancalite.Domain;
 
 namespace Bancalite.Application.Core
 {
-    public class MappingProfile:Profile
+    public class MappingProfile : Profile
     {
         public MappingProfile()
         {

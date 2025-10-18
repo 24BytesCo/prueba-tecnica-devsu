@@ -1,18 +1,17 @@
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
 using Bancalite.Application.Clientes.ClienteCreate;
 using Bancalite.Application.Clientes.ClienteList;
-using Microsoft.AspNetCore.Authorization;
-using Bancalite.Application.Clientes.GetCliente;
 using Bancalite.Application.Clientes.ClienteUpdate;
-using Bancalite.Application.Clientes.ClienteDelete;
-using static Bancalite.Application.Clientes.ClienteCreate.ClienteCreateCommand;
+using Bancalite.Application.Clientes.GetCliente;
 using Bancalite.Application.Core;
-using static Bancalite.Application.Clientes.ClienteUpdate.ClienteUpdateCommand;
-using static Bancalite.Application.Clientes.ClienteDelete.ClienteDeleteCommand;
-using static Bancalite.Application.Clientes.GetCliente.GetClienteQuery;
-using System.Security.Claims;
 using Bancalite.WebApi.Extensions;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using static Bancalite.Application.Clientes.ClienteCreate.ClienteCreateCommand;
+using static Bancalite.Application.Clientes.ClienteDelete.ClienteDeleteCommand;
+using static Bancalite.Application.Clientes.ClienteList.ClienteListQuery;
+using static Bancalite.Application.Clientes.ClienteUpdate.ClienteUpdateCommand;
+using static Bancalite.Application.Clientes.GetCliente.GetClienteQuery;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -27,7 +26,7 @@ namespace Bancalite.WebApi.Controllers
     public class ClientesController : ControllerBase
     {
         private readonly ISender _sender;
-        
+
         /// <summary>
         /// Inicializa el controlador de clientes.
         /// </summary>
@@ -76,7 +75,7 @@ namespace Bancalite.WebApi.Controllers
             [FromQuery] bool? estado = null,
             CancellationToken cancellationToken = default)
         {
-            var query = new ClienteListQuery.ClienteListQueryRequest(pagina, tamano, nombres, numeroDocumento, estado);
+            var query = new ClienteListQueryRequest(pagina, tamano, nombres, numeroDocumento, estado);
             var result = await _sender.Send(query, cancellationToken);
             return this.FromResult(result);
         }

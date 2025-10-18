@@ -1,17 +1,13 @@
+using Bancalite.Domain;
 using Bancalite.Persitence;
+using Bancalite.Persitence.Model;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
-using System.Data.Common;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Bancalite.Persitence.Model;
-using Bancalite.Domain;
 
 namespace Bancalite.Infraestructure.Startup;
 

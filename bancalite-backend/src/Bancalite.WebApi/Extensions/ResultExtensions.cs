@@ -1,6 +1,5 @@
 using Bancalite.Application.Core;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace Bancalite.WebApi.Extensions
 {

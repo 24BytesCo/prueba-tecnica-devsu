@@ -1,10 +1,13 @@
-using System.Threading;
-using System.Threading.Tasks;
+using Bancalite.Application.Catalogos;
 using Bancalite.Application.Core;
 using Bancalite.WebApi.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using static Bancalite.Application.Catalogos.TiposCuentaList.TiposCuentaListQuery;
+using static Bancalite.Application.Catalogos.TiposDocumentoList.TiposDocumentoListQuery;
+using static Bancalite.Application.Catalogos.TiposMovimientoList.TiposMovimientoListQuery;
+using GenerosListQuery = Bancalite.Application.Catalogos.GenerosList.GenerosListQuery;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -27,9 +30,9 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpGet("generos")]
         [Authorize]
-        public async Task<ActionResult<Result<System.Collections.Generic.List<Bancalite.Application.Catalogos.CatalogoItemDto>>>> GetGeneros(CancellationToken ct)
+        public async Task<ActionResult<Result<List<CatalogoItemDto>>>> GetGeneros(CancellationToken ct)
         {
-            var result = await _sender.Send(new Bancalite.Application.Catalogos.GenerosList.GenerosListQuery.GenerosListQueryRequest(), ct);
+            var result = await _sender.Send(new GenerosListQuery.GenerosListQueryRequest(), ct);
             return this.FromResult(result);
         }
 
@@ -38,9 +41,31 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpGet("tipos-documento")]
         [Authorize]
-        public async Task<ActionResult<Result<System.Collections.Generic.List<Bancalite.Application.Catalogos.CatalogoItemDto>>>> GetTiposDocumento(CancellationToken ct)
+        public async Task<ActionResult<Result<List<CatalogoItemDto>>>> GetTiposDocumento(CancellationToken ct)
         {
-            var result = await _sender.Send(new Bancalite.Application.Catalogos.TiposDocumentoList.TiposDocumentoListQuery.TiposDocumentoListQueryRequest(), ct);
+            var result = await _sender.Send(new TiposDocumentoListQueryRequest(), ct);
+            return this.FromResult(result);
+        }
+
+        /// <summary>
+        /// Devuelve la lista de tipos de cuenta activos ordenados por nombre.
+        /// </summary>
+        [HttpGet("tipos-cuenta")]
+        [Authorize]
+        public async Task<ActionResult<Result<List<CatalogoItemDto>>>> GetTiposCuenta(CancellationToken ct)
+        {
+            var result = await _sender.Send(new TiposCuentaListQueryRequest(), ct);
+            return this.FromResult(result);
+        }
+
+        /// <summary>
+        /// Devuelve la lista de tipos de movimiento activos ordenados por nombre.
+        /// </summary>
+        [HttpGet("tipos-movimiento")]
+        [Authorize]
+        public async Task<ActionResult<Result<List<CatalogoItemDto>>>> GetTiposMovimiento(CancellationToken ct)
+        {
+            var result = await _sender.Send(new TiposMovimientoListQueryRequest(), ct);
             return this.FromResult(result);
         }
     }

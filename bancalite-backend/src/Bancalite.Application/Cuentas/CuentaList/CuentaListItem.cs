@@ -1,5 +1,3 @@
-using System;
-
 namespace Bancalite.Application.Cuentas.CuentaList
 {
     /// <summary>
@@ -36,6 +34,11 @@ namespace Bancalite.Application.Cuentas.CuentaList
         /// Nombre del titular.
         /// </summary>
         public string ClienteNombre { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Estado del cliente (true=activo, false=inactivo).
+        /// </summary>
+        public bool ClienteActivo { get; set; }
 
         /// <summary>
         /// Saldo actual.

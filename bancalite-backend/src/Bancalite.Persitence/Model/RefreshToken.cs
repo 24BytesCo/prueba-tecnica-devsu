@@ -1,6 +1,3 @@
-using System;
-using Bancalite.Persitence.Model;
-
 namespace Bancalite.Persitence.Model
 {
     /// <summary>

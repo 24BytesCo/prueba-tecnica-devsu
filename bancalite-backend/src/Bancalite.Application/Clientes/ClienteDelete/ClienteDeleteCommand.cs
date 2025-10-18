@@ -1,11 +1,8 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Core;
+using Bancalite.Application.Interface;
 using Bancalite.Persitence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Bancalite.Application.Interface;
 
 namespace Bancalite.Application.Clientes.ClienteDelete
 {

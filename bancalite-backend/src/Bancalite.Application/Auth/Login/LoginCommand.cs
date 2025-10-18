@@ -1,3 +1,4 @@
+using Bancalite.Application.Config;
 using Bancalite.Application.Core;
 using Bancalite.Application.Interface;
 using Bancalite.Persitence;
@@ -6,7 +7,6 @@ using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Bancalite.Application.Config;
 
 namespace Bancalite.Application.Auth.Login
 {

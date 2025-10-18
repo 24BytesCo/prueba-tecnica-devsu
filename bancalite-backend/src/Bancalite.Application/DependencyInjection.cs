@@ -1,8 +1,7 @@
+using Bancalite.Application.Core.Behaviors;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Bancalite.Application.Core.Behaviors;
-using AutoMapper;
 
 namespace Bancalite.Application
 {
