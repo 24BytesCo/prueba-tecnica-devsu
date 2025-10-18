@@ -109,5 +109,3 @@ Si publicas Front como imagen, puedes extender el workflow para construir `banca
 - Configurar variables de JWT en la API (`JWT__Key`, `JWT__Issuer`, `JWT__Audience`)
 - Externalizar cadena de conexión `ConnectionStrings__Default`
 - Activar logs y trazabilidad según entorno
-
-
