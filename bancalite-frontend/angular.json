@@ -25,6 +25,7 @@
             "main": "src/main.ts",
             "polyfills": [],
             "tsConfig": "tsconfig.app.json",
+            "allowedCommonJsDependencies": ["sweetalert2"],
             "assets": [
               { "glob": "favicon.ico", "input": "src", "output": "/" },
               "src/assets"

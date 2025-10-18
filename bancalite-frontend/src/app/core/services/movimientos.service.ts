@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { Observable, map } from 'rxjs';
 import { ApiResult } from '../../shared/models/api.models';
@@ -22,7 +22,7 @@ export class MovimientosService {
   }
 
   create(payload: MovimientoCreateForm): Observable<ApiResult<MovimientoCreado>> {
-    return this.http.post<ApiResult<MovimientoCreado>>(`${this.baseUrl}/movimientos`, payload);
+    const headers = payload.idempotencyKey ? new HttpHeaders({ 'Idempotency-Key': payload.idempotencyKey }) : undefined;
+    return this.http.post<ApiResult<MovimientoCreado>>(`${this.baseUrl}/movimientos`, payload, { headers });
   }
 }
-

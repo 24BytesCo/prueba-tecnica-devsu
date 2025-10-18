@@ -27,6 +27,8 @@ describe('CuentasFormPageComponent (Jest)', () => {
   const mockClientes = { list: listClientesSpy } as Partial<ClientesService> as ClientesService;
 
   beforeEach(async () => {
+    // Silenciar warning de Angular sobre [disabled] en reactive forms en tests
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
     await TestBed.configureTestingModule({
       imports: [ReactiveFormsModule],
       declarations: [CuentasFormPageComponent],
@@ -70,4 +72,3 @@ describe('CuentasFormPageComponent (Jest)', () => {
     expect(navSpy).toHaveBeenCalledWith('/cuentas');
   });
 });
-
