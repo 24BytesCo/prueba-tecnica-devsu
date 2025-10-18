@@ -4,6 +4,7 @@ import { ClientesService } from '../../../core/services/clientes.service';
 import { CatalogosService } from '../../../core/services/catalogos.service';
 import { of } from 'rxjs';
 import { Router } from '@angular/router';
+import { provideMockStore } from '@ngrx/store/testing';
 
 // Evita que sweetalert2 inyecte CSS en JSDOM durante los tests
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() } }));
@@ -30,7 +31,8 @@ describe('ClientesListPageComponent (Jest)', () => {
       providers: [
         { provide: ClientesService, useValue: mockClientes },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
-        { provide: CatalogosService, useValue: mockCatalogos }
+        { provide: CatalogosService, useValue: mockCatalogos },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 

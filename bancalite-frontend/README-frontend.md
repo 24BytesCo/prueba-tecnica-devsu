@@ -105,3 +105,18 @@ npm run build
 - Exportaciones:
   - BotÃ³n "Descargar JSON": GET `/api/reportes/json` como archivo.
   - BotÃ³n "Descargar PDF (Base64)": obtiene base64 y descarga.
+
+## Docker (Nginx)
+El frontend cuenta con un `Dockerfile` multi-stage y una configuración de Nginx para servir la SPA y proxyear `/api` hacia el backend.
+
+```bash
+docker build -t bancalite-web -f bancalite-frontend/Dockerfile .
+docker run --rm -p 8081:80 bancalite-web
+# http://localhost:8081
+```
+
+Con `docker-compose.yml` en la raíz puedes levantar DB + API + Front con un solo comando:
+
+```bash
+docker compose up -d --build
+```

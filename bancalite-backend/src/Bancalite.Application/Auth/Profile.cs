@@ -7,5 +7,9 @@ namespace Bancalite.Application.Auth
         public string? CodeRol { get; set; }
         public string? Token { get; set; }
         public string? RefreshToken { get; set; }
+        /// <summary>
+        /// Estado del cliente vinculado al usuario (true=activo, false=inactivo). Null si no aplica.
+        /// </summary>
+        public bool? ClienteActivo { get; set; }
     }
 }

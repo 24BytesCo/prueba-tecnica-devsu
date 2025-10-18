@@ -5,6 +5,8 @@ import { CuentasService } from '../../../core/services/cuentas.service';
 import { CatalogosService, CatalogoItem } from '../../../core/services/catalogos.service';
 import { ClientesService } from '../../../core/services/clientes.service';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -36,7 +38,7 @@ import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
           <input class="input" type="number" formControlName="saldoInicial" />
 
           <div class="actions">
-            <button class="btn-primary" type="submit" [disabled]="form.invalid">Guardar</button>
+            <button class="btn-primary" type="submit" [disabled]="form.invalid || clienteInactivo">Guardar</button>
             <button class="btn" type="button" (click)="cancel()">Cancelar</button>
           </div>
         </form>
@@ -73,8 +75,9 @@ export class CuentasFormPageComponent {
   tiposCuenta: CatalogoItem[] = [];
   sugerencias: any[] = [];
   private search$ = new Subject<string>();
+  clienteInactivo = false;
 
-  constructor(private fb: FormBuilder, private route: ActivatedRoute, private router: Router, private api: CuentasService, private cat: CatalogosService, private clientes: ClientesService) {
+  constructor(private fb: FormBuilder, private route: ActivatedRoute, private router: Router, private api: CuentasService, private cat: CatalogosService, private clientes: ClientesService, private store: Store) {
     this.form = this.fb.group({
       numeroCuenta: [''],
       tipoCuentaId: ['', Validators.required],
@@ -109,6 +112,9 @@ export class CuentasFormPageComponent {
         this.form.get('clienteNombre')?.disable({ emitEvent: false });
       });
     }
+
+    // Estado del cliente actual para desactivar Guardar
+    this.store.select(authFeature.selectClienteActivo).subscribe(act => this.clienteInactivo = act === false);
   }
 
   save() {

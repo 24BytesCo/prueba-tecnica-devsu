@@ -4,6 +4,7 @@ import { ReportesService } from '../../../core/services/reportes.service';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { ClientesService } from '../../../core/services/clientes.service';
 import { of } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 describe('ReportesPageComponent (Jest)', () => {
   let component: ReportesPageComponent;
@@ -58,7 +59,8 @@ describe('ReportesPageComponent (Jest)', () => {
       providers: [
         { provide: ReportesService, useValue: repSvc },
         { provide: CuentasService, useValue: ctasSvc },
-        { provide: ClientesService, useValue: cliSvc }
+        { provide: ClientesService, useValue: cliSvc },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 

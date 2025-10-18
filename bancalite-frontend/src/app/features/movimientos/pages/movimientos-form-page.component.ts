@@ -8,6 +8,8 @@ import { MovimientoCreateForm } from '../../../shared/models/movimientos.models'
 import Swal from 'sweetalert2';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { CuentaListItem } from '../../../shared/models/cuentas.models';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -42,7 +44,7 @@ import { CuentaListItem } from '../../../shared/models/cuentas.models';
           <input class="input" formControlName="idempotencyKey" placeholder="Opcional para evitar duplicados" />
 
           <div class="actions">
-            <button class="btn-primary" type="submit" [disabled]="form.invalid">Guardar</button>
+            <button class="btn-primary" type="submit" [disabled]="form.invalid || clienteInactivo">Guardar</button>
             <button class="btn" type="button" (click)="cancel()">Cancelar</button>
           </div>
         </form>
@@ -74,8 +76,10 @@ export class MovimientosFormPageComponent {
   tipos: CatalogoItem[] = [];
   sugerencias: CuentaListItem[] = [];
   private search$ = new Subject<string>();
+  clienteInactivo = false;
+  isAdmin = false;
 
-  constructor(private fb: FormBuilder, private route: ActivatedRoute, private router: Router, private cat: CatalogosService, private api: MovimientosService, private cuentas: CuentasService) {
+  constructor(private fb: FormBuilder, private route: ActivatedRoute, private router: Router, private cat: CatalogosService, private api: MovimientosService, private cuentas: CuentasService, private store: Store) {
     this.form = this.fb.group({
       numeroCuenta: ['', Validators.required],
       tipoCodigo: ['', Validators.required],
@@ -88,6 +92,17 @@ export class MovimientosFormPageComponent {
 
     const numeroPrefill = this.route.snapshot.queryParamMap.get('numeroCuenta');
     if (numeroPrefill) this.form.patchValue({ numeroCuenta: numeroPrefill });
+    // Si no viene por query y es User con una sola cuenta, preseleccionar
+    this.store.select(authFeature.selectCodeRol).subscribe(code => {
+      this.isAdmin = (code || '').toLowerCase() === 'admin';
+      if (!this.isAdmin && !this.form.get('numeroCuenta')?.value) {
+        this.cuentas.list(1, 2, {}).subscribe(p => {
+          if (p?.total === 1 && p.items?.length === 1) {
+            this.form.get('numeroCuenta')?.setValue(p.items[0].numeroCuenta);
+          }
+        });
+      }
+    });
 
     // Búsqueda reactiva de cuentas por número, titular o documento
     this.search$
@@ -97,10 +112,16 @@ export class MovimientosFormPageComponent {
         switchMap(q => {
           const term = (q || '').trim();
           if (!term) { this.sugerencias = []; }
-          return this.cuentas.list(1, 5, { q: term, activo: true, clientesActivos: true });
+          const filtros = this.isAdmin ? { q: term, activo: true, clientesActivos: true } : { q: term } as any;
+          return this.cuentas.list(1, 5, filtros);
         })
       )
       .subscribe(res => (this.sugerencias = res?.items || []));
+
+    // Estado del cliente actual para desactivar Guardar
+    this.store.select(authFeature.selectClienteActivo).subscribe(act => this.clienteInactivo = act === false);
+    
+    // Rol para decidir filtros en sugerencias (ya suscrito arriba para preselección)
   }
 
   save() {
@@ -125,7 +146,8 @@ export class MovimientosFormPageComponent {
       },
       error: err => {
         const msg = err?.error?.title || 'Ocurrió un error';
-        Swal.fire({ icon: 'error', title: 'No se pudo registrar', text: msg });
+        const detail = err?.error?.detail || 'No se pudo registrar el movimiento.';
+        Swal.fire({ icon: 'error', title: detail, text: msg });
       }
     });
   }

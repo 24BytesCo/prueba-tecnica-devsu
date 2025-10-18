@@ -2,13 +2,19 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { ClientesService } from './clientes.service';
 import { environment } from '../../../environments/environment';
+import { provideMockStore } from '@ngrx/store/testing';
 
 describe('ClientesService (Jest)', () => {
   let service: ClientesService;
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [HttpClientTestingModule] });
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: { codeRol: 'Admin' } } } })
+      ]
+    });
     service = TestBed.inject(ClientesService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -38,4 +44,3 @@ describe('ClientesService (Jest)', () => {
     req.flush({ isSuccess: true, datos: { pagina: 1, tamano: 10, total: 0, items: [] } });
   });
 });
-

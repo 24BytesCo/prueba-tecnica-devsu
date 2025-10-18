@@ -401,3 +401,4 @@ docker pull ghcr.io/<owner>/<repo>:latest
     - Ver: `src/Bancalite.Application/Clientes/ClienteUpdate/ClientePutRequest.cs` y `ClientePatchRequest.cs`.
   - Validaciones de FKs en FluentValidation (`GeneroId`, `TipoDocumentoIdentidadId`).
   - Si `NumeroDocumento` se cambia a uno existente para el mismo tipo, la base devolverá conflicto según restricciones.
+

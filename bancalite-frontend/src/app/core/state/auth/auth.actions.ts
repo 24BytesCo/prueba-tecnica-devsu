@@ -11,6 +11,8 @@ export const AuthActions = createActionGroup({
     'Login Success': props<{ profile: Profile }>(),
     // Error del login (ProblemDetails u otro payload)
     'Login Failure': props<{ error: any }>(),
+    // Perfil/rol cargado desde /auth/me tras login
+    'Me Success': props<{ profile: Profile }>(),
     // Cerrar sesión de forma explícita
     'Logout': emptyProps()
   }

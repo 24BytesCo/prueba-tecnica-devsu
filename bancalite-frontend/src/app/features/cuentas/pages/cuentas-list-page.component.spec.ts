@@ -3,6 +3,7 @@ import { CuentasListPageComponent } from './cuentas-list-page.component';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
+import { provideMockStore } from '@ngrx/store/testing';
 
 // Evita inyección de CSS de SweetAlert en JSDOM
 jest.mock('sweetalert2', () => ({ __esModule: true, default: { fire: jest.fn() } }));
@@ -19,7 +20,8 @@ describe('CuentasListPageComponent (Jest)', () => {
       declarations: [CuentasListPageComponent],
       providers: [
         { provide: CuentasService, useValue: mockCuentas },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        provideMockStore({ initialState: { auth: { loading: false, error: null, profile: null } } })
       ]
     }).compileComponents();
 
@@ -49,4 +51,3 @@ describe('CuentasListPageComponent (Jest)', () => {
     expect(last[2]).toEqual(expect.objectContaining({ clientesActivos: false }));
   });
 });
-

@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CuentasService } from '../../../core/services/cuentas.service';
 import { MovimientoItem } from '../../../shared/models/cuentas.models';
+import { Store } from '@ngrx/store';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
 
 @Component({
   template: `
@@ -9,7 +11,7 @@ import { MovimientoItem } from '../../../shared/models/cuentas.models';
       <div class="row">
         <h1 class="brand">Detalle de Cuenta</h1>
         <span class="spacer"></span>
-        <button class="btn" (click)="nuevoMovimiento()" *ngIf="cuenta">Nuevo movimiento</button>
+        <button class="btn" (click)="nuevoMovimiento()" *ngIf="cuenta" [disabled]="clienteInactivo">Nuevo movimiento</button>
         <button class="btn" (click)="back()">Volver</button>
       </div>
 
@@ -61,8 +63,9 @@ import { MovimientoItem } from '../../../shared/models/cuentas.models';
 export class CuentasDetailPageComponent {
   cuenta: any;
   movimientos: MovimientoItem[] = [];
+  clienteInactivo = false;
 
-  constructor(private route: ActivatedRoute, private router: Router, private api: CuentasService) {
+  constructor(private route: ActivatedRoute, private router: Router, private api: CuentasService, private store: Store) {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.api.get(id).subscribe((d: any) => {
@@ -77,6 +80,9 @@ export class CuentasDetailPageComponent {
         }
       });
     }
+
+    // Estado del cliente actual
+    this.store.select(authFeature.selectClienteActivo).subscribe(act => this.clienteInactivo = act === false);
   }
 
   back() { this.router.navigateByUrl('/cuentas'); }

@@ -40,8 +40,8 @@ namespace Bancalite.WebApi.Controllers
             [FromQuery] Guid? clienteId = null,
             [FromQuery] string? estado = null,
             [FromQuery] string? q = null,
-            [FromQuery] bool activo = true,
-            [FromQuery] bool clientesActivos = true,
+            [FromQuery] bool? activo = null,
+            [FromQuery] bool? clientesActivos = null,
             CancellationToken ct = default)
         {
             var result = await _sender.Send(new CuentaListQueryRequest(pagina, tamano, clienteId, estado, q, activo, clientesActivos), ct);

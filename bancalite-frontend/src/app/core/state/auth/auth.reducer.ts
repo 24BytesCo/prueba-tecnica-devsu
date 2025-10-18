@@ -20,6 +20,11 @@ const reducer = createReducer(
   on(AuthActions.login, state => ({ ...state, loading: true, error: null })),
   on(AuthActions.loginSuccess, (state, { profile }) => ({ ...state, loading: false, profile })),
   on(AuthActions.loginFailure, (state, { error }) => ({ ...state, loading: false, error })),
+  on(AuthActions.meSuccess, (state, { profile }) => ({
+    ...state,
+    // fusionamos codeRol (u otros campos) en el profile existente
+    profile: { ...(state.profile || {}), ...profile }
+  })),
   on(AuthActions.logout, state => ({ ...state, profile: null }))
 );
 
@@ -30,7 +35,11 @@ export const authFeature = createFeature({
   extraSelectors: ({ selectAuthState }) => ({
     selectLoading: createSelector(selectAuthState, s => s.loading),
     selectProfile: createSelector(selectAuthState, s => s.profile),
-    selectError: createSelector(selectAuthState, s => s.error)
+    selectError: createSelector(selectAuthState, s => s.error),
+    // Exponer directamente el código de rol ('Admin' | 'User')
+    selectCodeRol: createSelector(selectAuthState, s => s.profile?.codeRol ?? null),
+    // Exponer el estado del cliente (true/false; null si no aplica)
+    selectClienteActivo: createSelector(selectAuthState, s => s.profile?.clienteActivo ?? null)
   })
 });
 
