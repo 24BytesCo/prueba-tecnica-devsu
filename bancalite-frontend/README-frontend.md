@@ -46,6 +46,48 @@ npm run build
 
 ## Notas
 - Sin frameworks de UI (solo SCSS propio).
-- Estado global con NgRx preparado (slices mínimos, sin lógica).
+- Estado global con NgRx para autenticación (acciones/efectos/reducer/selectores básicos).
 - Interceptores y guards están como stubs para completar en siguientes historias.
 
+## Consumo de API
+- Contrato de éxito: ApiResult<T> `{ isSuccess, datos, error }` → los servicios mapean a `datos`.
+- Contrato de error: ProblemDetails `{ title, status, detail }` → interceptor muestra `detail` con SweetAlert2 y maneja 401 redirigiendo al login.
+
+## Catálogos (para formularios)
+- Clientes usa los endpoints de catálogo del backend para poblar selects:
+  - `GET /api/catalogos/generos`
+  - `GET /api/catalogos/tipos-documento`
+  - Servicio: `CatalogosService` (core/services).
+
+## Estilos (mini librería)
+- Clases globales en `src/styles.scss`:
+  - Botones: `.btn`, `.btn-primary`, `.btn-ghost`
+  - Inputs: `.input`, `.select`
+  - Formularios: `.form`, `.form-grid`, `.form-field`, `.error`, `.hint`
+  - Tabla liviana: `.table`, `.thead`, `.rowt`
+
+## Buscador de clientes (nombres/documento)
+- Componente: `src/app/features/clientes/pages/clientes-list-page.component.ts`.
+- Servicio: `src/app/core/services/clientes.service.ts`.
+- Comportamiento: si el término es numérico (solo dígitos) se envía `numeroDocumento=<término>`, si no, `nombres=<término>`.
+  - Evita combinar ambos filtros para no forzar un AND que vacíe resultados.
+  - En backend, `nombres` usa contiene; `numeroDocumento` usa prefijo (StartsWith).
+
+## Loader global y toasts de éxito
+- Loader overlay global que cubre la app mientras hay peticiones HTTP en curso.
+  - Servicio: `src/app/core/services/loader.service.ts`.
+  - Componente: `src/app/shared/components/loader/loader.component.ts` (insertado en el layout protegido).
+- Interceptor: `src/app/core/interceptors/loader.interceptor.ts`.
+  - Muestra loader para todas las requests.
+  - Muestra toast SweetAlert2 (top‑end) solo en respuestas exitosas de `POST/PUT/PATCH/DELETE`.
+  - Los `GET` no generan toast. Los errores se tratan en `ErrorInterceptor`.
+
+## Edición del Número de Documento
+- En creación se puede editar; en edición queda inhabilitado (solo lectura).
+  - Página standalone: `src/app/features/clientes/pages/clientes-form-page.component.ts`.
+  - Modal desde lista: `src/app/features/clientes/pages/clientes-list-page.component.ts` (deshabilita al editar y habilita al crear).
+  - Se usa `getRawValue()` al guardar para incluir campos deshabilitados.
+
+## Proxy en desarrollo
+- `environment.apiBaseUrl = '/api'` y `proxy.conf.json` redirige a `http://localhost:8080`.
+- Ver: `angular.json` (`serve.proxyConfig`) y `bancalite-frontend/proxy.conf.json`.

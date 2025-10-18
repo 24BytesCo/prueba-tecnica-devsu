@@ -39,9 +39,13 @@ public class MeQuery
                 ?? await _userManager.FindByNameAsync(idOrEmailOrName);
             if (user is null) return Result<Profile>.Failure("Unauthorized");
 
+            //Buscar rol
+            var roles = await _userManager.GetRolesAsync(user);
+
             var profile = new Profile
             {
                 NombreCompleto = user.DisplayName ?? user.UserName,
+                CodeRol = roles.First() ?? null,
                 Email = user.Email,
                 Token = null,
                 RefreshToken = null
