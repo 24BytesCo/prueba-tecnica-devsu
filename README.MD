@@ -82,12 +82,12 @@ npm start
 Workflow: `.github/workflows/ci-docker.yml`
 
 - En pull_request: ejecuta tests .NET y build de imagen (sin push)
-- En push a `main`: build y push de imagen de la API a GHCR y Docker Hub
+- En push a `main`: build y push de imagen de la app a GHCR y Docker Hub
 
 Imágenes publicadas (API):
 
-- GHCR: `ghcr.io/<owner>/<repo>:latest` y tags (sha, semver, main)
-- Docker Hub: `docker.io/${DOCKERHUB_USERNAME}/bancalite-api:latest`
+- GHCR: `ghcr.io/<owner>/<repo>-app:latest` y tags (sha, semver, main)
+- Docker Hub: `docker.io/${DOCKERHUB_USERNAME}/bancalite-app:latest`
 
 Si publicas Front como imagen, puedes extender el workflow para construir `bancalite-frontend/Dockerfile` y publicar `bancalite-web`.
 
