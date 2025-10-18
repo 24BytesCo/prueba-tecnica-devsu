@@ -4,6 +4,7 @@ import { Component } from '@angular/core';
   selector: 'app-protected-layout',
   template: `
     <app-header></app-header>
+    <app-loader></app-loader>
     <div class="layout">
       <app-sidebar></app-sidebar>
       <main class="content">
@@ -20,4 +21,3 @@ import { Component } from '@angular/core';
   ]
 })
 export class ProtectedLayoutComponent {}
-

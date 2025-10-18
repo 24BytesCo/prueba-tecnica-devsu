@@ -283,6 +283,14 @@ Endpoints del reporte de estado de cuenta (JSON y PDF):
   - Paginación automática de tabla; importes con `es-ES` y débitos en rojo.
   - Branding configurable vía `Report:BrandName` y color con `Report:AccentColor`.
 
+## Catálogos (API)
+
+Endpoints de solo lectura para poblar formularios en el frontend. Responden con `ApiResult<T>` y delegan la consulta a la capa Application (CQRS/MediatR).
+
+- `GET /api/catalogos/generos` — Lista géneros activos ordenados por nombre.
+- `GET /api/catalogos/tipos-documento` — Lista tipos de documento activos ordenados por nombre.
+
+
 Notas de cálculo
 - Los totales se agregan sobre el rango `[desde, hasta]` en UTC.
 - `saldoInicial/saldoFinal` se calculan a partir de `SaldoPrevio/SaldoPosterior` del primer/último movimiento por cuenta. Si no hay movimientos, se usa el `SaldoActual` como referencia.
@@ -353,3 +361,19 @@ docker pull ghcr.io/<owner>/<repo>:latest
 - Build con archivos bloqueados: matar proceso `Bancalite.WebApi` (Windows: `taskkill /IM Bancalite.WebApi.exe /F`)
 - Error tokens de Identity: asegurar `.AddDefaultTokenProviders()` en DI
 - Ethereal no entrega a Gmail/Outlook: revisar mensajes en su UI
+
+## Clientes (API) — notas de implementación
+
+- Listado con filtros: `GET /api/clientes?pagina&tamano&nombres&numeroDocumento&estado`
+  - Seguridad: `Authorize(Roles = "Admin")`.
+  - `nombres`: contiene sobre `Persona.Nombres + " " + Persona.Apellidos` (case-insensitive).
+  - `numeroDocumento`: búsqueda por prefijo (StartsWith) sobre `Persona.NumeroDocumento`.
+  - `estado`: `true|false`.
+  - Orden por Apellidos, luego Nombres. Devuelve `Paged<ClienteListItem>`.
+
+- Actualización (PUT/PATCH):
+  - Contrato acepta `tipoDocumentoIdentidadId` (Guid).
+  - Alias de compatibilidad: también se admite `tipoDocumentoIdentidad` (sin sufijo `Id`) y se mapea internamente a `tipoDocumentoIdentidadId`.
+    - Ver: `src/Bancalite.Application/Clientes/ClienteUpdate/ClientePutRequest.cs` y `ClientePatchRequest.cs`.
+  - Validaciones de FKs en FluentValidation (`GeneroId`, `TipoDocumentoIdentidadId`).
+  - Si `NumeroDocumento` se cambia a uno existente para el mismo tipo, la base devolverá conflicto según restricciones.
