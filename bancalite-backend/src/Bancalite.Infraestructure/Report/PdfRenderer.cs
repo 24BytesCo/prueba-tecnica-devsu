@@ -58,25 +58,25 @@ namespace Bancalite.Infraestructure.Report
                     // Encabezado estilo extracto
                     page.Header().Background(softHeader).Padding(18).Column(h =>
                     {
-                        h.Item().AlignCenter().Text(esMultiCuenta ? "EXTRACTO DE CUENTAS" : "EXTRACTO DE LA CUENTA").FontSize(16).SemiBold();
+                        h.Item().AlignCenter().Text(esMultiCuenta ? "EXTRACTO DE CUENTAS" : "EXTRACTO DE LA CUENTA").FontSize(16);
                         // Más margen superior para la fila de datos
                         h.Item().PaddingTop(14).Row(r =>
                         {
                             r.RelativeItem().Column(col =>
                             {
                                 var fechaEmision = DateTime.UtcNow.ToString("dd 'de' MMMM yyyy", culture).ToUpper(culture);
-                                col.Item().PaddingBottom(4).Text(text => { text.Span("FECHA: ").SemiBold(); text.Span(fechaEmision); });
+                                col.Item().PaddingBottom(4).Text(text => { text.Span("FECHA: "); text.Span(fechaEmision); });
                                 if (!string.IsNullOrWhiteSpace(dto.ClienteNombre))
                                     col.Item().PaddingBottom(4).Text(text =>
                                     {
-                                        text.Span("TITULAR: ").SemiBold();
+                                        text.Span("TITULAR: ");
                                         text.Span((dto.ClienteNombre ?? string.Empty).ToUpperInvariant());
                                     });
                                 if (!string.IsNullOrWhiteSpace(dto.ClienteTipoDocumento))
-                                    col.Item().PaddingBottom(4).Text(text => { text.Span("DOCUMENTO: ").SemiBold(); text.Span((dto.ClienteTipoDocumento ?? string.Empty).ToUpper(culture)); });
+                                    col.Item().PaddingBottom(4).Text(text => { text.Span("DOCUMENTO: "); text.Span((dto.ClienteTipoDocumento ?? string.Empty).ToUpper(culture)); });
                                 if (!string.IsNullOrWhiteSpace(dto.ClienteNumeroDocumento))
-                                    col.Item().PaddingBottom(4).Text(text => { text.Span("Nº: ").SemiBold(); text.Span(dto.ClienteNumeroDocumento!); });
-                                col.Item().PaddingBottom(4).Text(text => { text.Span("PERIODO: ").SemiBold(); text.Span($"{dto.Desde:dd.MM.yyyy} - {dto.Hasta:dd.MM.yyyy}"); });
+                                    col.Item().PaddingBottom(4).Text(text => { text.Span("Nº: "); text.Span(dto.ClienteNumeroDocumento!); });
+                                col.Item().PaddingBottom(4).Text(text => { text.Span("PERIODO: "); text.Span($"{dto.Desde:dd.MM.yyyy} - {dto.Hasta:dd.MM.yyyy}"); });
                             });
                             if (esMultiCuenta)
                             {
@@ -108,7 +108,7 @@ namespace Bancalite.Infraestructure.Report
                             //Espacio de separación de 20px
                             col.Item().PaddingTop(20);
                             col.Item().PaddingBottom(6)
-                                .Text($"CONSOLIDADO — {cuentas.Count} CUENTAS ({preview}{suffix})").SemiBold();
+                                .Text($"CONSOLIDADO — {cuentas.Count} CUENTAS ({preview}{suffix})");
 
                             // Tabla general (todas las cuentas)
                             col.Item().Element(c =>
@@ -119,11 +119,9 @@ namespace Bancalite.Infraestructure.Report
                                     {
                                         l.PrimaryLayer().Element(TablaGeneral);
                                         // sombra sutil para dar contorno
-                                        l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
-                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
-                                        // texto principal en rojo tenue
+                                        // texto principal en rojo más tenue (más "transparente" visualmente)
                                         l.Layer().AlignCenter().AlignMiddle()
-                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                            .Text("USUARIO INACTIVO").FontSize(36).FontColor(Colors.Red.Lighten5);
                                     });
                                 }
                                 else
@@ -139,7 +137,7 @@ namespace Bancalite.Infraestructure.Report
                                 var movsCuenta = dto.Movimientos.Where(m => m.NumeroCuenta == n).ToList();
                                 if (movsCuenta.Count == 0) continue;
                                 col.Item().PaddingTop(28)
-                                    .Text($"Cuenta {n}").SemiBold();
+                                    .Text($"Cuenta {n}");
                                 col.Item().Element(c =>
                                 {
                                     if (drawWatermark)
@@ -147,10 +145,8 @@ namespace Bancalite.Infraestructure.Report
                                         c.Layers(l =>
                                         {
                                             l.PrimaryLayer().Element(cc => TablaPorCuenta(cc, movsCuenta));
-                                            l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
-                                                .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
                                             l.Layer().AlignCenter().AlignMiddle()
-                                                .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                                .Text("USUARIO INACTIVO").FontSize(36).FontColor(Colors.Red.Lighten5);
                                         });
                                     }
                                     else
@@ -172,10 +168,8 @@ namespace Bancalite.Infraestructure.Report
                                     c.Layers(l =>
                                     {
                                         l.PrimaryLayer().Element(TablaExtracto);
-                                        l.Layer().AlignCenter().AlignMiddle().PaddingLeft(1).PaddingTop(1)
-                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.White);
                                         l.Layer().AlignCenter().AlignMiddle()
-                                            .Text("USUARIO INACTIVO").FontSize(40).SemiBold().FontColor(Colors.Red.Lighten3);
+                                            .Text("USUARIO INACTIVO").FontSize(36).FontColor(Colors.Red.Lighten5);
                                     });
                                 }
                                 else
@@ -206,7 +200,7 @@ namespace Bancalite.Infraestructure.Report
 
                         container.Border(1).Padding(6).Column(c =>
                         {
-                            c.Item().AlignCenter().Text("CUENTA").SemiBold();
+                            c.Item().AlignCenter().Text("CUENTA");
                             c.Item().Table(t =>
                             {
                                 t.ColumnsDefinition(cols =>
@@ -219,7 +213,7 @@ namespace Bancalite.Infraestructure.Report
 
                                 t.Cell().Element(VCell).Text(digits);
 
-                                IContainer HCell(IContainer x) => x.Border(1).Padding(3).DefaultTextStyle(s => s.SemiBold().FontSize(8)).AlignCenter();
+                                IContainer HCell(IContainer x) => x.Border(1).Padding(3).DefaultTextStyle(s => s.FontSize(8)).AlignCenter();
                                 IContainer VCell(IContainer x) => x.Border(1).Padding(4).AlignCenter();
                             });
                         });
@@ -229,7 +223,7 @@ namespace Bancalite.Infraestructure.Report
                     {
                         container.Border(1).Padding(6).Column(c =>
                         {
-                            c.Item().AlignCenter().Text($"CUENTAS INCLUIDAS ({cuentas.Count})").SemiBold();
+                            c.Item().AlignCenter().Text($"CUENTAS INCLUIDAS ({cuentas.Count})");
                             if (cuentas.Count == 0)
                             {
                                 c.Item().AlignCenter().Text("—");
@@ -266,7 +260,7 @@ namespace Bancalite.Infraestructure.Report
                                 header.Cell().Element(HeaderCell).AlignRight().Text("SALDO");
 
                                 IContainer HeaderCell(IContainer c) => c.Padding(6).Border(0)
-                                    .DefaultTextStyle(x => x.SemiBold().FontSize(11));
+                                    .DefaultTextStyle(x => x.FontSize(11));
                             });
 
                             // Helpers de celda
@@ -317,7 +311,7 @@ namespace Bancalite.Infraestructure.Report
                             {
                                 c.Item().Text(text =>
                                 {
-                                    text.Span("Totales  ").SemiBold();
+                                    text.Span("Totales  ");
                                     text.Span($"Créditos: {F(dto.TotalCreditos)}    Débitos: {F(dto.TotalDebitos)}    ");
                                     text.Span($"Saldo Inicial: {F(dto.SaldoInicial)}    Saldo Final: {F(dto.SaldoFinal)}");
                                 });
@@ -350,7 +344,7 @@ namespace Bancalite.Infraestructure.Report
                                 header.Cell().Element(HeaderCell).AlignRight().Text("SALDO");
 
                                 IContainer HeaderCell(IContainer c) => c.Padding(6).Border(0)
-                                    .DefaultTextStyle(x => x.SemiBold().FontSize(11));
+                                    .DefaultTextStyle(x => x.FontSize(11));
                             });
 
                             IContainer CellPlain(IContainer c) => c.Padding(5).BorderBottom(0.5f);
@@ -414,7 +408,7 @@ namespace Bancalite.Infraestructure.Report
                                 header.Cell().Element(HeaderCell).AlignRight().Text("SALDO");
 
                                 IContainer HeaderCell(IContainer c) => c.Padding(6).Border(0)
-                                    .DefaultTextStyle(x => x.SemiBold().FontSize(11));
+                                    .DefaultTextStyle(x => x.FontSize(11));
                             });
 
                             IContainer CellPlain(IContainer c) => c.Padding(5).BorderBottom(0.5f);
@@ -469,7 +463,7 @@ namespace Bancalite.Infraestructure.Report
                             {
                                 c.Item().Text(text =>
                                 {
-                                    text.Span("Resumen cuenta  ").SemiBold();
+                                    text.Span("Resumen cuenta  ");
                                     text.Span($"Créditos: {F(totalCred)}    Débitos: {F(totalDeb)}    ");
                                     text.Span($"Saldo Inicial: {F(saldoIni)}    Saldo Final: {F(saldoFin)}");
                                 });

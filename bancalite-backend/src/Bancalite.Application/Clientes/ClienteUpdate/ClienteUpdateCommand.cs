@@ -103,6 +103,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                 p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
 
                 bool inhabilitar = request.Request.Estado == false && cliente.Estado == true;
+                bool habilitar = request.Request.Estado == true && cliente.Estado == false;
                 cliente.Estado = request.Request.Estado;
 
                 // Si se inhabilitó el cliente, inhabilitar todas sus cuentas
@@ -172,6 +173,8 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                         return Result<bool>.Failure("El usuario está desactivado. Comuníquese con un administrador.");
                 }
 
+                // (habilitar) se evaluará más abajo, tras establecer el nuevo estado
+
                 var p = cliente.Persona;
 
                 // Cambios condicionales
@@ -185,6 +188,7 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                 if (request.Request.Telefono != null) p.Telefono = string.IsNullOrWhiteSpace(request.Request.Telefono) ? null : request.Request.Telefono.Trim();
                 if (request.Request.Email != null) p.Email = string.IsNullOrWhiteSpace(request.Request.Email) ? null : request.Request.Email.Trim();
                 bool inhabilitar = request.Request.Estado.HasValue && request.Request.Estado.Value == false && cliente.Estado == true;
+                bool habilitar = request.Request.Estado.HasValue && request.Request.Estado.Value == true && cliente.Estado == false;
                 if (request.Request.Estado.HasValue) cliente.Estado = request.Request.Estado.Value;
 
                 // Validar unicidad de documento si cambió (si ambos campos están presentes)
@@ -198,6 +202,18 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
                     if (duplicado)
                     {
                         return Result<bool>.Failure("La persona con el documento indicado ya existe");
+                    }
+                }
+
+                // Si se habilitó el cliente, activar todas sus cuentas inactivas
+                if (habilitar)
+                {
+                    var cuentasHab = await _context.Cuentas.Where(c => c.ClienteId == cliente.Id).ToListAsync(cancellationToken);
+                    foreach (var cta in cuentasHab)
+                    {
+                        // Reactivar cualquier cuenta no activa (incluye Inactiva y Bloqueada)
+                        if (cta.Estado != Domain.EstadoCuenta.Activa)
+                            cta.Activar();
                     }
                 }
 
