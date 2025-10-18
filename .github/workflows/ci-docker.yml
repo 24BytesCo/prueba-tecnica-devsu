@@ -55,7 +55,6 @@ jobs:
           images: |
             ghcr.io/${{ github.repository }}-app
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/bancalite-app
-            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/bancalite-api # alias temporal de compatibilidad
           tags: |
             # Always tag with short SHA
             type=sha,format=short
