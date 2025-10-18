@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AuthActions } from '../../../core/state/auth/auth.actions';
+import { authFeature } from '../../../core/state/auth/auth.reducer';
+import { Observable } from 'rxjs';
 
 @Component({
   template: `
@@ -10,6 +12,7 @@ import { AuthActions } from '../../../core/state/auth/auth.actions';
         <input [(ngModel)]="email" placeholder="Email" style="padding:10px;" />
         <input [(ngModel)]="password" placeholder="Contraseña" type="password" style="padding:10px;" />
         <button class="btn-primary" (click)="login()">Entrar</button>
+        <div class="error" *ngIf="(error$ | async) as err" style="color:#b91c1c; font-size:13px;">{{ err }}</div>
       </div>
     </section>
   `,
@@ -18,7 +21,12 @@ import { AuthActions } from '../../../core/state/auth/auth.actions';
 export class LoginPageComponent {
   email = '';
   password = '';
-  constructor(private store: Store) {}
+  // Exponemos el error para mostrar mensajes (401, etc.)
+  error$: Observable<string | null>;
+  constructor(private store: Store) {
+    // Selector corto a error para evitar acoplar a efectos
+    this.error$ = this.store.select(authFeature.selectError);
+  }
   login() {
     // Disparamos la acción de login; los efectos hablarán con el backend
     this.store.dispatch(AuthActions.login({ email: this.email, password: this.password }));
