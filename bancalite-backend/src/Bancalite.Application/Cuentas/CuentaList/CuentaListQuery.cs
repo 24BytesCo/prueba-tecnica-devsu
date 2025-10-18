@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
 using Bancalite.Application.Core;
 using Bancalite.Persitence;
@@ -23,11 +18,17 @@ namespace Bancalite.Application.Cuentas.CuentaList
         /// <param name="Tamano">Tamaño de página.</param>
         /// <param name="ClienteId">Filtra por cliente.</param>
         /// <param name="Estado">Filtra por estado (Activa/Inactiva/Bloqueada).</param>
+        /// <param name="Q">Búsqueda por nombre del cliente, documento o número de cuenta.</param>
+        /// <param name="Activo">Si true (default) retorna solo cuentas activas; si false, no activas.</param>
+        /// <param name="ClientesActivos">Si true (default) retorna solo clientes activos; si false incluye inactivos.</param>
         public record CuentaListQueryRequest(
             int Pagina = 1,
             int Tamano = 10,
             Guid? ClienteId = null,
-            string? Estado = null
+            string? Estado = null,
+            string? Q = null,
+            bool? Activo = null,
+            bool? ClientesActivos = null
         ) : IRequest<Result<Paged<CuentaListItem>>>;
 
         internal class Handler : IRequestHandler<CuentaListQueryRequest, Result<Paged<CuentaListItem>>>
@@ -74,6 +75,41 @@ namespace Bancalite.Application.Cuentas.CuentaList
                     query = query.Where(c => c.Estado.ToString().Equals(estado, StringComparison.OrdinalIgnoreCase));
                 }
 
+                // Filtro de activo (enum) si se especifica por bandera Activo
+                if (request.Activo.HasValue)
+                {
+                    if (request.Activo.Value)
+                        query = query.Where(c => c.Estado == Domain.EstadoCuenta.Activa);
+                    else
+                        query = query.Where(c => c.Estado == Domain.EstadoCuenta.Inactiva);
+                }
+
+                // Filtro por clientes activos/inactivos
+                if (request.ClientesActivos.HasValue)
+                {
+                    if (request.ClientesActivos.Value)
+                        query = query.Where(c => c.Cliente.Estado == true);
+                    else
+                        query = query.Where(c => c.Cliente.Estado == false);
+                }
+
+                // Búsqueda compuesta por Q
+                if (!string.IsNullOrWhiteSpace(request.Q))
+                {
+                    var q = request.Q.Trim();
+                    var qLower = q.ToLower();
+                    var isNumeric = q.All(char.IsDigit);
+
+                    query = query.Where(c =>
+                        // nombre del cliente contiene
+                        (c.Cliente.Persona.Nombres + " " + c.Cliente.Persona.Apellidos).ToLower().Contains(qLower)
+                        // documento por prefijo
+                        || (isNumeric && c.Cliente.Persona.NumeroDocumento.StartsWith(q))
+                        // número de cuenta por prefijo
+                        || (isNumeric && c.NumeroCuenta.StartsWith(q))
+                    );
+                }
+
                 // Total para paginación
                 var total = await query.CountAsync(cancellationToken);
 
@@ -93,6 +129,7 @@ namespace Bancalite.Application.Cuentas.CuentaList
                     TipoCuentaNombre = c.TipoCuenta.Nombre,
                     ClienteId = c.ClienteId,
                     ClienteNombre = $"{c.Cliente.Persona.Nombres} {c.Cliente.Persona.Apellidos}",
+                    ClienteActivo = c.Cliente.Estado,
                     SaldoActual = c.SaldoActual,
                     Estado = c.Estado.ToString(),
                     FechaApertura = c.FechaApertura

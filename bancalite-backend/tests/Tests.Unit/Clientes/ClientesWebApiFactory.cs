@@ -1,18 +1,17 @@
-using System.Security.Claims;
-using System.Text;
-using System.Text.Encodings.Web;
 using Bancalite.Persitence;
+using Bancalite.Persitence.Model;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Identity;
-using Bancalite.Persitence.Model;
-using Microsoft.Extensions.Hosting;
+using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace Tests.Unit.Clientes;
 

@@ -1,4 +1,3 @@
-using System.Net;
 using Bancalite.Application.Core;
 using Bancalite.Application.Interface;
 using Bancalite.Persitence.Model;

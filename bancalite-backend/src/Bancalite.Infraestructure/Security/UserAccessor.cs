@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Bancalite.Application.Interface;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace Bancalite.Infraestructure.Security
 {

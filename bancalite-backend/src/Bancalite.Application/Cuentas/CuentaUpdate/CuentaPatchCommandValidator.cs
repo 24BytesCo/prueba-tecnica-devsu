@@ -1,6 +1,6 @@
+using Bancalite.Persitence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using Bancalite.Persitence;
 
 namespace Bancalite.Application.Cuentas.CuentaUpdate
 {

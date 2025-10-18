@@ -1,0 +1,192 @@
+:root {
+  --brand-color: #1a3a74;
+  --sidebar-bg: #fafafa;
+  --accent: #f6d726;
+  --accent-500: #f6d726;
+  --accent-600: #e2c712;
+  --border: #e5e7eb;
+  --muted: #6b7280;
+  --bg: #ffffff;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Arial, sans-serif;
+  color: #222;
+}
+
+.brand {
+  color: var(--brand-color);
+}
+
+.container {
+  padding: 1rem 1.5rem;
+}
+
+/* layout helpers */
+.row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ======== Mini diseño del sistema (sin frameworks) ======== */
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: #fff;
+  color: #333;
+}
+
+.btn:hover {
+  background: #f9fafb;
+}
+
+.btn-primary {
+  background: var(--accent-500);
+  border-color: var(--accent-600);
+  color: #222;
+}
+
+.btn-primary:hover {
+  background: var(--accent-600);
+}
+
+/* Estados deshabilitados (accesibles y evidentes) */
+.btn:disabled,
+.btn[disabled],
+.btn-primary:disabled,
+.btn-primary[disabled],
+.btn-ghost:disabled,
+.btn-ghost[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: saturate(0.7);
+}
+
+/* Evitar efecto hover cuando está deshabilitado */
+.btn:disabled:hover,
+.btn[disabled]:hover,
+.btn-primary:disabled:hover,
+.btn-primary[disabled]:hover,
+.btn-ghost:disabled:hover,
+.btn-ghost[disabled]:hover {
+  background: inherit;
+  text-decoration: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--brand-color);
+}
+
+.btn-ghost:hover {
+  text-decoration: underline;
+}
+
+/* Tamaños */
+.btn-lg {
+  padding: 12px 18px;
+  font-size: 15px;
+  border-radius: 8px;
+}
+
+/* Inputs */
+.input {
+  width: 98%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, .25);
+}
+
+.select {
+  @extend .input;
+}
+
+/* Formularios */
+.form {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-grid.single {
+  grid-template-columns: 1fr;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.form-field .hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form-field .error {
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+/* Tabla liviana */
+.table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.thead,
+.rowt {
+  display: grid;
+  grid-template-columns: 2fr 1fr 2fr 1fr 1.2fr;
+  gap: 8px;
+  padding: 12px;
+  align-items: center;
+}
+
+.thead {
+  background: #f8fafc;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+.rowt {
+  border-bottom: 1px solid #f1f5f9;
+}

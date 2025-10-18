@@ -1,27 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
+using Bancalite.Application.Core;
 using Bancalite.Application.Cuentas.CuentaCreate;
-using Bancalite.Application.Cuentas.CuentaDelete;
 using Bancalite.Application.Cuentas.CuentaEstado;
 using Bancalite.Application.Cuentas.CuentaList;
 using Bancalite.Application.Cuentas.CuentaResponse;
-using Bancalite.Application.Cuentas.GetCuenta;
 using Bancalite.Application.Cuentas.CuentaUpdate;
+using Bancalite.WebApi.Extensions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Bancalite.Application.Core;
-using static Bancalite.Application.Cuentas.CuentaUpdate.CuentaUpdateCommand;
 using static Bancalite.Application.Cuentas.CuentaCreate.CuentaCreateCommand;
 using static Bancalite.Application.Cuentas.CuentaDelete.CuentaDeleteCommand;
 using static Bancalite.Application.Cuentas.CuentaEstado.CuentaEstadoPatchCommand;
 using static Bancalite.Application.Cuentas.CuentaList.CuentaListQuery;
+using static Bancalite.Application.Cuentas.CuentaUpdate.CuentaUpdateCommand;
 using static Bancalite.Application.Cuentas.GetCuenta.GetCuentaQuery;
-using Bancalite.Application.Cuentas.MisCuentas;
-using Bancalite.WebApi.Extensions;
+using static Bancalite.Application.Cuentas.MisCuentas.MisCuentasQuery;
 
 namespace Bancalite.WebApi.Controllers
 {
@@ -46,9 +39,12 @@ namespace Bancalite.WebApi.Controllers
             [FromQuery] int tamano = 10,
             [FromQuery] Guid? clienteId = null,
             [FromQuery] string? estado = null,
+            [FromQuery] string? q = null,
+            [FromQuery] bool? activo = null,
+            [FromQuery] bool? clientesActivos = null,
             CancellationToken ct = default)
         {
-            var result = await _sender.Send(new CuentaListQueryRequest(pagina, tamano, clienteId, estado), ct);
+            var result = await _sender.Send(new CuentaListQueryRequest(pagina, tamano, clienteId, estado, q, activo, clientesActivos), ct);
             return this.FromResult(result);
         }
 
@@ -59,7 +55,7 @@ namespace Bancalite.WebApi.Controllers
         [Authorize]
         public async Task<ActionResult<Result<IReadOnlyList<CuentaListItem>>>> MisCuentas(CancellationToken ct)
         {
-            var result = await _sender.Send(new MisCuentasQuery.MisCuentasQueryRequest(), ct);
+            var result = await _sender.Send(new MisCuentasQueryRequest(), ct);
             return this.FromResult(result);
         }
 
@@ -79,7 +75,7 @@ namespace Bancalite.WebApi.Controllers
         /// </summary>
         [HttpPost]
         // Requiere estar autenticado
-        [Authorize] 
+        [Authorize]
         public async Task<ActionResult<Result<Guid>>> Crear([FromBody] CuentaCreateRequest request, CancellationToken ct)
         {
             var result = await _sender.Send(new CuentaCreateCommandRequest(request), ct);

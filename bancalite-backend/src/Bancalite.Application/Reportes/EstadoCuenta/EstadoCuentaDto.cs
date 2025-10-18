@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Bancalite.Application.Reportes.EstadoCuenta
 {
     /// <summary>
@@ -10,6 +7,9 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
     {
         public Guid? ClienteId { get; set; }
         public string? ClienteNombre { get; set; }
+        public bool? ClienteActivo { get; set; }
+        public string? ClienteTipoDocumento { get; set; }
+        public string? ClienteNumeroDocumento { get; set; }
         public string? NumeroCuenta { get; set; }
         public DateTime Desde { get; set; }
         public DateTime Hasta { get; set; }

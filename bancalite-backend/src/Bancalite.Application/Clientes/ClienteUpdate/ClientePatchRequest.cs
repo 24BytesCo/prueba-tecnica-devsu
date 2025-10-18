@@ -1,4 +1,4 @@
-using System;
+using System.Text.Json.Serialization;
 
 namespace Bancalite.Application.Clientes.ClienteUpdate
 {
@@ -32,6 +32,16 @@ namespace Bancalite.Application.Clientes.ClienteUpdate
         /// Identificador del tipo de documento de identidad.
         /// </summary>
         public Guid? TipoDocumentoIdentidadId { get; set; }
+
+        /// <summary>
+        /// Alias de compatibilidad para clientes que envían "tipoDocumentoIdentidad" (sin sufijo Id).
+        /// Asigna al campo Id cuando está presente.
+        /// </summary>
+        [JsonPropertyName("tipoDocumentoIdentidad")]
+        public Guid? TipoDocumentoIdentidad
+        {
+            set => TipoDocumentoIdentidadId = value;
+        }
 
         /// <summary>
         /// Número de documento de identidad.

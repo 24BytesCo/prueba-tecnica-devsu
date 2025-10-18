@@ -1,14 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Bancalite.Application.Core;
+using FluentValidation;
 using System.Net;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Bancalite.Application.Core;
-using System.Security.Authentication;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.EntityFrameworkCore;
-using FluentValidation;
 
 namespace Bancalite.WebApi.Middleware
 {
@@ -20,7 +13,7 @@ namespace Bancalite.WebApi.Middleware
         private readonly ILogger<ExceptionMiddleware> _logger;
         private readonly IHostEnvironment _environment;
 
-        
+
         public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IHostEnvironment environment)
         {
             _next = next;

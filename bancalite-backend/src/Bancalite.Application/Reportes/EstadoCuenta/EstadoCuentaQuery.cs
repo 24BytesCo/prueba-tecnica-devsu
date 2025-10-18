@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Core;
 using Bancalite.Application.Interface;
 using Bancalite.Persitence;
@@ -60,7 +55,8 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
 
                 if (!string.IsNullOrWhiteSpace(req.NumeroCuenta))
                 {
-                    var cuenta = await _context.Cuentas.Include(c => c.Cliente).ThenInclude(cl => cl.Persona)
+                    var cuenta = await _context.Cuentas
+                        .Include(c => c.Cliente).ThenInclude(cl => cl.Persona).ThenInclude(p => p.TipoDocumentoIdentidad)
                         .FirstOrDefaultAsync(c => c.NumeroCuenta == req.NumeroCuenta!.Trim(), ct);
                     if (cuenta == null) return Result<EstadoCuentaDto>.Failure("No encontrado");
                     if (!esAdmin)
@@ -77,7 +73,9 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
                 }
                 else if (req.ClienteId != null)
                 {
-                    var cliente = await _context.Clientes.Include(c => c.Persona).FirstOrDefaultAsync(c => c.Id == req.ClienteId, ct);
+                    var cliente = await _context.Clientes
+                        .Include(c => c.Persona).ThenInclude(p => p.TipoDocumentoIdentidad)
+                        .FirstOrDefaultAsync(c => c.Id == req.ClienteId, ct);
                     if (cliente == null) return Result<EstadoCuentaDto>.Failure("No encontrado");
                     if (!esAdmin)
                     {
@@ -97,6 +95,7 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
                 var desde = req.Desde.Date;
                 var hastaExcl = req.Hasta.Date.AddDays(1);
 
+                // Obtener movimientos con detalle y asnotracking para reporte lectura pura
                 var movs = await _context.Movimientos.AsNoTracking()
                     .Include(m => m.Tipo)
                     .Include(m => m.Cuenta)
@@ -112,6 +111,31 @@ namespace Bancalite.Application.Reportes.EstadoCuenta
                     Desde = req.Desde,
                     Hasta = req.Hasta
                 };
+                // Definir estado y documento del cliente
+                if (!string.IsNullOrWhiteSpace(req.NumeroCuenta))
+                {
+                    var cta = await _context.Cuentas.AsNoTracking()
+                        .Include(c => c.Cliente).ThenInclude(cl => cl.Persona).ThenInclude(p => p.TipoDocumentoIdentidad)
+                        .FirstOrDefaultAsync(c => c.NumeroCuenta == numeroCuenta, ct);
+                    if (cta != null)
+                    {
+                        dto.ClienteActivo = cta.Cliente.Estado;
+                        dto.ClienteTipoDocumento = cta.Cliente.Persona.TipoDocumentoIdentidad?.Nombre;
+                        dto.ClienteNumeroDocumento = cta.Cliente.Persona.NumeroDocumento;
+                    }
+                }
+                else if (req.ClienteId != null)
+                {
+                    var cli = await _context.Clientes.AsNoTracking()
+                        .Include(c => c.Persona).ThenInclude(p => p.TipoDocumentoIdentidad)
+                        .FirstOrDefaultAsync(c => c.Id == req.ClienteId, ct);
+                    if (cli != null)
+                    {
+                        dto.ClienteActivo = cli.Estado;
+                        dto.ClienteTipoDocumento = cli.Persona.TipoDocumentoIdentidad?.Nombre;
+                        dto.ClienteNumeroDocumento = cli.Persona.NumeroDocumento;
+                    }
+                }
 
                 // Detalle
                 foreach (var m in movs)

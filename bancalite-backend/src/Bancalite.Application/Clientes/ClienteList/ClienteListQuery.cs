@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using AutoMapper;
+using Bancalite.Application.Core;
 using Bancalite.Persitence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Bancalite.Application.Core;
 
 namespace Bancalite.Application.Clientes.ClienteList
 {
@@ -24,7 +17,7 @@ namespace Bancalite.Application.Clientes.ClienteList
         /// <param name="Pagina">Número de página (1-based).</param>
         /// <param name="Tamano">Tamaño de página (cantidad de registros).</param>
         /// <param name="Nombres">Filtro por nombre/apellido (contiene) en Persona.</param>
-        /// <param name="NumeroDocumento">Filtro por número de documento (exacto).</param>
+        /// <param name="NumeroDocumento">Filtro por número de documento (prefijo).</param>
         /// <param name="Estado">Filtro por estado del cliente (true=activo, false=inactivo).</param>
         public record ClienteListQueryRequest(
             int Pagina = 1,
@@ -37,7 +30,7 @@ namespace Bancalite.Application.Clientes.ClienteList
         /// <summary>
         /// Manejador de la consulta de clientes.
         /// </summary>
-        internal class Handler : IRequestHandler<ClienteListQueryRequest, Result<Paged<ClienteListItem>>> 
+        internal class Handler : IRequestHandler<ClienteListQueryRequest, Result<Paged<ClienteListItem>>>
         {
             private readonly BancaliteContext _context;
             private readonly IMapper _mapeador;
@@ -77,7 +70,8 @@ namespace Bancalite.Application.Clientes.ClienteList
                     if (!string.IsNullOrWhiteSpace(request.NumeroDocumento))
                     {
                         var ndoc = request.NumeroDocumento.Trim();
-                        query = query.Where(c => c.Persona.NumeroDocumento == ndoc);
+                        // Coincidencia por prefijo para permitir búsqueda incremental (ej: "1061%")
+                        query = query.Where(c => c.Persona.NumeroDocumento.StartsWith(ndoc));
                     }
 
                     if (request.Estado.HasValue)

@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Bancalite.Application.Config;
 using Bancalite.Application.Core;
 using Bancalite.Application.Interface;
@@ -88,6 +84,10 @@ namespace Bancalite.Application.Movimientos.MovimientoCreate
                 // Cuenta debe estar Activa
                 if (!string.Equals(cuenta.Estado.ToString(), "Activa", StringComparison.OrdinalIgnoreCase))
                     return Result<MovimientoDto>.Failure("No encontrado"); // ocultar existencia
+
+                // Regla de negocio: si el cliente está inactivo, no permitir movimientos
+                if (cuenta.Cliente.Estado == false)
+                    return Result<MovimientoDto>.Failure("El usuario está desactivado");
 
                 // Validar tipo de movimiento por código (DEB/CRE)
                 var tipo = await _context.TiposMovimiento.AsNoTracking()

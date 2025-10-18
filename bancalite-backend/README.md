@@ -50,7 +50,7 @@ Backend de Bancalite construido con ASP.NET Core (net9), EF Core (PostgreSQL), I
 ### Report (branding PDF)
 
 - `Report:BrandName`: nombre que aparece en el encabezado del PDF (p. ej., "Bancalite").
-- `Report:AccentColor`: color acento en formato HEX (p. ej., `#F44336`).
+- `Report:AccentColor`: color acento en formato HEX (p. ej., `#095177`). Si no se configura, el acento por defecto es `#095177`.
 - `Report:LogoPath`: reservado para futuro uso de logotipo.
 
 ### SMTP (IEmailSender)
@@ -182,6 +182,30 @@ Endpoints y reglas principales del módulo Movimientos:
   - Lista movimientos por número de cuenta y rango de fechas (UTC, [desde, hasta)).
   - Seguridad: `Authorize`. Admin o propietario de la cuenta.
 
+## Reportes (API)
+
+Endpoints para Estado de Cuenta (JSON/PDF):
+
+- `GET /api/reportes`
+  - Devuelve el DTO `EstadoCuentaDto` (JSON) con totales, saldos y lista de movimientos.
+  - Parámetros: `clienteId?`, `numeroCuenta?`, `desde` (ISO), `hasta` (ISO). Debe indicarse `clienteId` o `numeroCuenta`.
+  - Seguridad: `Authorize`. Admin o propietario.
+
+- `GET /api/reportes/pdf`
+  - Descarga el reporte como PDF (attachment). Usa QuestPDF.
+
+- `GET /api/reportes/pdf-base64`
+  - Devuelve `{ fileName, contentType, base64 }` del PDF.
+
+- `GET /api/reportes/json`
+  - Descarga el JSON del reporte como archivo `.json` (attachment). Útil para cumplir requerimiento de exportación JSON.
+
+Detalles del PDF:
+- Encabezado con FECHA (es-ES, mayúsculas), TITULAR (mayúsculas), DOCUMENTO y Nº.
+- Si el reporte incluye varias cuentas: título "CONSOLIDADO — N CUENTAS", tabla general con columna NÚMERO y, debajo, secciones por cada cuenta con subtítulo y subresumen (créditos/débitos/saldo inicial/final).
+- Si el cliente está inactivo: watermark "USUARIO INACTIVO".
+- Estilo sobrio (headers sin color, mayor espaciado vertical) y color de acento configurable.
+
 ### Configuración de Movimientos
 
 En `appsettings.json` (opcional; valores por defecto indicados):
@@ -283,6 +307,14 @@ Endpoints del reporte de estado de cuenta (JSON y PDF):
   - Paginación automática de tabla; importes con `es-ES` y débitos en rojo.
   - Branding configurable vía `Report:BrandName` y color con `Report:AccentColor`.
 
+## Catálogos (API)
+
+Endpoints de solo lectura para poblar formularios en el frontend. Responden con `ApiResult<T>` y delegan la consulta a la capa Application (CQRS/MediatR).
+
+- `GET /api/catalogos/generos` — Lista géneros activos ordenados por nombre.
+- `GET /api/catalogos/tipos-documento` — Lista tipos de documento activos ordenados por nombre.
+
+
 Notas de cálculo
 - Los totales se agregan sobre el rango `[desde, hasta]` en UTC.
 - `saldoInicial/saldoFinal` se calculan a partir de `SaldoPrevio/SaldoPosterior` del primer/último movimiento por cuenta. Si no hay movimientos, se usa el `SaldoActual` como referencia.
@@ -353,3 +385,20 @@ docker pull ghcr.io/<owner>/<repo>:latest
 - Build con archivos bloqueados: matar proceso `Bancalite.WebApi` (Windows: `taskkill /IM Bancalite.WebApi.exe /F`)
 - Error tokens de Identity: asegurar `.AddDefaultTokenProviders()` en DI
 - Ethereal no entrega a Gmail/Outlook: revisar mensajes en su UI
+
+## Clientes (API) — notas de implementación
+
+- Listado con filtros: `GET /api/clientes?pagina&tamano&nombres&numeroDocumento&estado`
+  - Seguridad: `Authorize(Roles = "Admin")`.
+  - `nombres`: contiene sobre `Persona.Nombres + " " + Persona.Apellidos` (case-insensitive).
+  - `numeroDocumento`: búsqueda por prefijo (StartsWith) sobre `Persona.NumeroDocumento`.
+  - `estado`: `true|false`.
+  - Orden por Apellidos, luego Nombres. Devuelve `Paged<ClienteListItem>`.
+
+- Actualización (PUT/PATCH):
+  - Contrato acepta `tipoDocumentoIdentidadId` (Guid).
+  - Alias de compatibilidad: también se admite `tipoDocumentoIdentidad` (sin sufijo `Id`) y se mapea internamente a `tipoDocumentoIdentidadId`.
+    - Ver: `src/Bancalite.Application/Clientes/ClienteUpdate/ClientePutRequest.cs` y `ClientePatchRequest.cs`.
+  - Validaciones de FKs en FluentValidation (`GeneroId`, `TipoDocumentoIdentidadId`).
+  - Si `NumeroDocumento` se cambia a uno existente para el mismo tipo, la base devolverá conflicto según restricciones.
+
