@@ -18,7 +18,6 @@ import Swal from 'sweetalert2';
       <div class="row" style="margin: 12px 0;">
         <div class="input-icon">
           <input class="input" (input)="onSearch($event)" placeholder="Buscar por nombre o documento" style="width:420px;" />
-          <svg class="icon" viewBox="0 0 24 24"><path fill="#64748b" d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.48-5.34C15.18 5.59 12.6 3 9.5 3S3.82 5.59 3.82 8.39s2.58 5.39 5.68 5.39c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14Zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14Z"/></svg>
         </div>
         <label style="display:flex; align-items:center; gap:6px; font-size:13px; color: var(--muted);">
           <input type="checkbox" [checked]="soloActivos" (change)="toggleSoloActivos($event)" /> Clientes activos

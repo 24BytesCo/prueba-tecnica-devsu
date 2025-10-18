@@ -91,3 +91,17 @@ npm run build
 ## Proxy en desarrollo
 - `environment.apiBaseUrl = '/api'` y `proxy.conf.json` redirige a `http://localhost:8080`.
 - Ver: `angular.json` (`serve.proxyConfig`) y `bancalite-frontend/proxy.conf.json`.
+- ## Movimientos (UI)
+- Ruta: `/movimientos`.
+- Búsqueda por número de cuenta, titular y cédula con sugerencias (autocomplete). Al seleccionar, se fija el número y se consulta.
+- Filtros: fechas (onChange dispara búsqueda), tipo CRE/DEB (filtro local) y texto en descripción.
+- Registrar movimiento: `/movimientos/nuevo` con buscador de cuenta + select de tipo (catálogo), monto, descripción e idempotency key.
+- Post‑creación redirige a `/movimientos?numeroCuenta=...`.
+
+- ## Reportes (UI)
+- Ruta: `/reportes`.
+- Modo "Por cuenta" (autocomplete por número/titular/cédula) y "Por cliente" (autocomplete por nombre/documento).
+- Fechas con cambio inmediato; render de resumen y tabla.
+- Exportaciones:
+  - Botón "Descargar JSON": GET `/api/reportes/json` como archivo.
+  - Botón "Descargar PDF (Base64)": obtiene base64 y descarga.
