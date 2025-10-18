@@ -62,7 +62,7 @@ import Swal from 'sweetalert2';
       .form .row { display:flex; flex-direction:column; margin:8px 0; }
       .form label { font-size:12px; color:#666; margin-bottom:4px; }
       .form input { padding:8px; }
-      .input-icon { position: relative; width: 100%; }
+      .input-icon { position: relative;  }
       .input-icon .icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; pointer-events: none; }
       .input-icon > .input { padding-right: 32px; }
     `
