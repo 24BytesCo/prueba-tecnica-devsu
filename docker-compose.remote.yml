@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:14.3
+    container_name: bancalite-db
+    restart: always
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-bancalite}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME:-bancalite}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: docker.io/${DOCKERHUB_USERNAME}/bancalite-app:${TAG:-latest}
+    container_name: bancalite-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-bancalite}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${DB_NAME:-bancalite};Username=${DB_USER};Password=${DB_PASSWORD};Pooling=true;Timeout=15;Command Timeout=30;SSL Mode=Disable"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: docker.io/${DOCKERHUB_USERNAME}/bancalite-web:${TAG:-latest}
+    container_name: bancalite-web
+    restart: always
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+

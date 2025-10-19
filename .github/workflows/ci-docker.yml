@@ -70,6 +70,28 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
             type=raw,value=app,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
 
+      - name: Docker metadata (web)
+        id: meta_web
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository }}-web
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/bancalite-web
+          tags: |
+            # Always tag with short SHA
+            type=sha,format=short
+            # Branch tags (e.g., main)
+            type=ref,event=branch
+            # Tag from annotated/semver tags (e.g., v1.2.3)
+            type=ref,event=tag
+            # Additional semver tags: 1.2.3, 1.2, 1 (only when pushing a semver tag)
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Stable aliases for main
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+            type=raw,value=web,enable=${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+
       - name: Login to GHCR
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: docker/login-action@v3
@@ -94,5 +116,17 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build web (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: bancalite-frontend/Dockerfile
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+          platforms: linux/amd64
+          tags: ${{ steps.meta_web.outputs.tags }}
+          labels: ${{ steps.meta_web.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
