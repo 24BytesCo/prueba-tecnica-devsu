@@ -87,7 +87,7 @@ Workflow: `.github/workflows/ci-docker.yml`
 Im√°genes publicadas (API):
 
 - GHCR: `ghcr.io/<owner>/<repo>-app:latest` y tags (sha, semver, main)
-- Docker Hub: `docker.io/${DOCKERHUB_USERNAME}/bancalite-app:latest`
+- Docker Hub: `docker.io/${DOCKERHUB_USERNAME}/bancalite-api:latest`
 
 Si publicas Front como imagen, puedes extender el workflow para construir `bancalite-frontend/Dockerfile` y publicar `bancalite-web`.
 
@@ -127,7 +127,7 @@ docker compose -f docker-compose.remote.yml --env-file .env up -d
 ```
 
 Im·genes esperadas en Docker Hub (push autom·tico desde CI al hacer push a `main`):
-- Backend (API): `docker.io/${DOCKERHUB_USERNAME}/bancalite-app:${TAG}`
+- Backend (API): `docker.io/${DOCKERHUB_USERNAME}/bancalite-api:${TAG}`
 - Frontend (Web): `docker.io/${DOCKERHUB_USERNAME}/bancalite-web:${TAG}`
 
 > Nota: en GitHub Container Registry (GHCR) las im·genes se publican como:
