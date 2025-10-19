@@ -109,3 +109,28 @@ Si publicas Front como imagen, puedes extender el workflow para construir `banca
 - Configurar variables de JWT en la API (`JWT__Key`, `JWT__Issuer`, `JWT__Audience`)
 - Externalizar cadena de conexiÃ³n `ConnectionStrings__Default`
 - Activar logs y trazabilidad segÃºn entorno
+
+## Despliegue con imágenes (sin build local)
+
+Para usar imágenes ya publicadas (backend y frontend) desde el registry y levantar todo igual que con `docker compose up -d --build`:
+
+1) Copia `.env.example` a `.env` y configura:
+   - `DB_*` según tu entorno
+   - `DOCKERHUB_USERNAME` con tu usuario de Docker Hub
+   - opcional: `TAG` (por defecto `latest`)
+
+2) Inicia con Compose usando el archivo remoto:
+
+```
+# descargará/empleará las imágenes publicadas
+docker compose -f docker-compose.remote.yml --env-file .env up -d
+```
+
+Imágenes esperadas en Docker Hub (push automático desde CI al hacer push a `main`):
+- Backend (API): `docker.io/${DOCKERHUB_USERNAME}/bancalite-app:${TAG}`
+- Frontend (Web): `docker.io/${DOCKERHUB_USERNAME}/bancalite-web:${TAG}`
+
+> Nota: en GitHub Container Registry (GHCR) las imágenes se publican como:
+> - `ghcr.io/<owner>/<repo>-app` (API)
+> - `ghcr.io/<owner>/<repo>-web` (Web)
+> con tags equivalentes a los de Docker Hub (sha, branch, semver, `latest`).
