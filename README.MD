@@ -1,136 +1,212 @@
-## Bancalite — Clean Architecture (Full‑Stack)
+# Bancalite — Clean Architecture (Full-Stack)
 
-Proyecto de banca simplificada implementado con Clean Architecture:
+Proyecto de banca simplificada implementado con **Clean Architecture**.
 
-- Backend (.NET 9)
-  - Domain, Application (CQRS + MediatR), Infrastructure (EF Core + Identity + PDF), WebApi
-- Frontend (Angular 18) + NgRx
-- Infra (Docker / Compose) para DB + API + Front
+- **Backend (.NET 9):** Domain, Application (CQRS + MediatR), Infrastructure (EF Core + Identity + PDF) y WebApi.
+- **Frontend (Angular 18):** NgRx para la gestión de estado.
+- **Infraestructura (Docker / Compose):** Contenedores para la base de datos, API y Frontend.
 
-## Documentación y artefactos
+---
 
-- Planificación y estimaciones — docs/plan/estimaciones.md
-- ERDs: 
-  - docs/db/movimientos/ERD-movimientos.drawio.png
-  - docs/db/accounts/ERD-cuentas.drawio.png
-  - docs/db/clients/ERD-persona-clientes..png
-- Dominio: reglas y casos — docs/db/domain/movimientos-spec.md, docs/db/domain/casos-de-prueba.md
-- Decision Log — docs/db/domain/decision-log.md
-- Postman Collection — Bancalite.postman_collection.json
+## 🚀 Guía de Despliegue Rápido (Recomendado)
 
-## Arquitectura (Clean Architecture)
+Este método es el más rápido para levantar la aplicación, ya que utiliza las imágenes públicas pre-construidas desde Docker Hub. No necesitas clonar el repositorio.
 
-- Domain: entidades y lógica básica (Cuentas, Movimientos, Cliente, Persona)
-- Application: casos de uso (Commands/Queries), validaciones (FluentValidation), puertos
-- Infrastructure: EF Core (PostgreSQL), Identity, rendering de PDF (QuestPDF), seeders
-- WebApi: endpoints REST, swagger, manejo de errores (ProblemDetails)
-- Frontend (Angular): módulos por feature, NgRx para auth y estado
+### Requisitos
 
-## Getting Started — Docker (recomendado)
+- Docker Desktop o Docker Engine con Docker Compose v2.
+- Conexión a internet para descargar las imágenes.
+- Puertos `5432`, `8080` y `4200` libres (o puedes cambiarlos en `.env`).
 
-Prerrequisitos: Docker Desktop 4.x / Compose v2, puerto libre 8080 (API) y 8081 (Front).
+### 1. Crear una carpeta de trabajo
 
-1) Configura variables en `.env` (o usa `.env.example`):
-
+```bash
+mkdir bancalite-stack
+cd bancalite-stack
 ```
-DB_NAME=bancalite
+
+### 2. Crear el archivo .env
+
+Crea un archivo llamado `.env` y pega el siguiente contenido. Recuerda cambiar los valores sensibles por unos seguros para producción.
+
+```env
+# Puertos de la aplicación
+API_PORT=8080
+WEB_PORT=4200
+
+# Base de Datos (PostgreSQL)
 DB_USER=admin
 DB_PASSWORD=Admin1234
-API_PORT=8080
-WEB_PORT=8081
+DB_NAME=bancalite
+DB_PORT=5432
+
+# Configuración JWT (JSON Web Token)
+# IMPORTANTE: usa una clave MUY larga y segura en producción.
+JWT__Key=super_larga_clave_secreta_para_fines_de_demo_cámbiala
+JWT__Issuer=Bancalite.WebApi
+JWT__Audience=Bancalite.Client
+JWT__ExpiresMinutes=60
+
+# Credenciales del Administrador por Defecto
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=CambiaEstaClave123!
+
+# Entorno de la Aplicación (Development | Production)
+ASPNETCORE_ENVIRONMENT=Development
 ```
 
-2) Levanta todo (DB + API + Front):
+Nota importante:
+- Se recomienda dejar `ASPNETCORE_ENVIRONMENT=Development` para que la migración de base de datos se ejecute automáticamente al iniciar la API.
+- Si necesitas usar `Production`, aplica manualmente el SQL: `docs/db/bancalite_prod_data.sql`.
 
+Configuración del backend:
+- La API lee su configuración por defecto desde `appsettings.Development.json` (por ejemplo: `ConnectionStrings`, `JWT`, `SMTP`).
+- En producción, replica/ajusta esa configuración en `appsettings.Production.json` o usa variables de entorno equivalentes en el `docker-compose.yml`.
+
+### 3. Crear el archivo docker-compose.yml
+
+Crea un archivo llamado `docker-compose.yml` con este contenido:
+
+```yaml
+services:
+  db:
+    image: postgres:14.3
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: 24bytes/bancalite-api:latest
+    restart: always
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__Default=Server=db;Port=5432;User Id=${DB_USER};Password=${DB_PASSWORD};Database=${DB_NAME}
+      - JWT__Key=${JWT__Key}
+      - JWT__Issuer=${JWT__Issuer}
+      - JWT__Audience=${JWT__Audience}
+      - JWT__ExpiresMinutes=${JWT__ExpiresMinutes}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+
+  web:
+    image: 24bytes/bancalite-web:latest
+    restart: always
+    ports:
+      - "${WEB_PORT}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
 ```
+
+### 4. Descargar y levantar el stack
+
+```bash
+# Descarga las imágenes más recientes
+docker compose pull
+
+# Levanta todos los servicios en segundo plano
+docker compose up -d
+```
+
+#### Solo para producción: inicializar base de datos
+
+
+Si configuraste `ASPNETCORE_ENVIRONMENT=Production`, la API no aplica migraciones automáticamente. Con los contenedores arriba, ejecuta el SQL que replica la estructura y carga datos iniciales:
+
+**Nota:** El sql debes descargarlo del repositorio en la ubicación `docs/db/bancalite_prod_data.sql` y ponerlo en la raiz de la carpeta local `bancalite-stack`
+
+```bash
+
+# Copiando el archivo al contenedor y ejecutándolo
+docker compose cp bancalite_prod_data.sql db:/tmp/bancalite_prod_data.sql
+docker compose exec db sh -lc 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /tmp/bancalite_prod_data.sql'
+```
+
+
+### 5. Acceder y administrar
+
+- Web (Frontend): http://localhost:4200
+- API (Backend): http://localhost:8080/swagger
+- Para detener los servicios: `docker compose down`
+- Para detener y eliminar los datos de la DB: `docker compose down -v`
+
+## 💻 Despliegue para Desarrollo (Construyendo las Imágenes)
+
+Usa este método si clonaste el repositorio y quieres construir las imágenes de Docker localmente a partir del código fuente.
+
+### Clona el repositorio:
+
+```bash
+git clone https://github.com/tu-usuario/bancalite-app.git
+cd bancalite-app
+```
+
+### Configura las variables de entorno:
+
+Copia el archivo de ejemplo y renómbralo a `.env`.
+
+```bash
+cp .env.example .env
+```
+
+### Levanta los servicios:
+
+Este comando construirá las imágenes y levantará los contenedores.
+
+```bash
 docker compose up -d --build
 ```
 
-3) Verifica salud y acceso:
+### Verifica que todo funcione:
 
-- API health: http://localhost:8080/health
-- Swagger API: http://localhost:8080/swagger
+- API Health Check: http://localhost:8080/health
 - Frontend: http://localhost:8081
 
-El Nginx del front hace proxy de `/api/*` → `api:8080`, por lo que `environment.apiBaseUrl='/api'` funciona sin CORS.
+## 🏛️ Arquitectura (Clean Architecture)
 
-Semillas (dev): se crean catálogos, rol Admin y usuario base al iniciar (ver Infrastructure README para detalles).
+- Domain: Contiene las entidades y la lógica de negocio principal.
+- Application: Define los casos de uso (Commands/Queries), validaciones y puertos.
+- Infrastructure: Implementa detalles externos como la base de datos (EF Core), autenticación (Identity) y generación de PDFs (QuestPDF).
+- WebApi: Expone los endpoints REST e integra Swagger.
+- Frontend (Angular): Organizado en módulos por funcionalidad, utilizando NgRx para el estado.
 
-## Ejecución local (sin Docker)
+## 🔄 CI/CD con GitHub Actions
 
-DB
-```
-docker compose up -d db
-```
+El repositorio incluye un workflow (`.github/workflows/ci-docker.yml`) que automatiza:
 
-API
-```
-cd bancalite-backend/src/Bancalite.WebApi
-dotnet run --urls http://localhost:8080
-```
+- En Pull Request: Ejecución de tests de .NET y construcción de imágenes.
+- En Push a main: Publicación de imágenes en GHCR y Docker Hub.
 
-Front
-```
-cd bancalite-frontend
-npm install
-npm start
-# http://localhost:4200 (proxy /api -> http://localhost:8080)
-```
+## 📂 Estructura del Repositorio
 
-## CI/CD (GitHub Actions) + Imágenes Docker
+- `bancalite-backend/`: Solución .NET.
+- `bancalite-frontend/`: Aplicación Angular 18 + NgRx.
+- `docs/`: Documentación, diagramas ERD y decisiones de arquitectura.
+- `docker-compose.yml`: Orquestador principal de servicios.
 
-Workflow: `.github/workflows/ci-docker.yml`
+## 📚 Documentación y Artefactos
 
-- En pull_request: ejecuta tests .NET y build de imagen (sin push)
-- En push a `main`: build y push de imagen de la app a GHCR y Docker Hub
-
-Imágenes publicadas (API):
-
-- GHCR: `ghcr.io/<owner>/<repo>-app:latest` y tags (sha, semver, main)
-- Docker Hub: `docker.io/${DOCKERHUB_USERNAME}/bancalite-api:latest`
-
-Si publicas Front como imagen, puedes extender el workflow para construir `bancalite-frontend/Dockerfile` y publicar `bancalite-web`.
-
-## Estructura del repo
-
-- `bancalite-backend/` — solución .NET (Domain, Application, Infrastructure, WebApi)
-- `bancalite-frontend/` — Angular 18 + NgRx
-- `docs/` — ERDs, reglas de dominio, WBS, decisiones
-- `docker-compose.yml` — DB + API + Front
-
-## Enlaces rápidos
-
-- Backend README: bancalite-backend/README.md
-- Frontend README: bancalite-frontend/README-frontend.md
-- Colección Postman: Bancalite.postman_collection.json
-
-## Notas de producción
-
-- Configurar variables de JWT en la API (`JWT__Key`, `JWT__Issuer`, `JWT__Audience`)
-- Externalizar cadena de conexión `ConnectionStrings__Default`
-- Activar logs y trazabilidad según entorno
-
-## Despliegue con im�genes (sin build local)
-
-Para usar im�genes ya publicadas (backend y frontend) desde el registry y levantar todo igual que con `docker compose up -d --build`:
-
-1) Copia `.env.example` a `.env` y configura:
-   - `DB_*` seg�n tu entorno
-   - `DOCKERHUB_USERNAME` con tu usuario de Docker Hub
-   - opcional: `TAG` (por defecto `latest`)
-
-2) Inicia con Compose usando el archivo remoto:
-
-```
-# descargar�/emplear� las im�genes publicadas
-docker compose -f docker-compose.remote.yml --env-file .env up -d
-```
-
-Im�genes esperadas en Docker Hub (push autom�tico desde CI al hacer push a `main`):
-- Backend (API): `docker.io/${DOCKERHUB_USERNAME}/bancalite-api:${TAG}`
-- Frontend (Web): `docker.io/${DOCKERHUB_USERNAME}/bancalite-web:${TAG}`
-
-> Nota: en GitHub Container Registry (GHCR) las im�genes se publican como:
-> - `ghcr.io/<owner>/<repo>-app` (API)
-> - `ghcr.io/<owner>/<repo>-web` (Web)
-> con tags equivalentes a los de Docker Hub (sha, branch, semver, `latest`).
+- Planificación y estimaciones: `docs/plan/estimaciones.md`
+- Diagramas ERD: `docs/db/`
+- Reglas de dominio y casos de prueba: `docs/db/domain/movimientos-spec.md`
+- Colección de Postman: `Bancalite.postman_collection.json`
