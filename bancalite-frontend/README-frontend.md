@@ -1,6 +1,6 @@
 # Bancalite Frontend (Angular 18)
 
-Esqueleto base para el frontend que consumirá el backend de Bancalite. Incluye NgModules, lazy‑loading, ESLint + Prettier, Jest y NgRx preparados.
+Esqueleto base para el frontend que consumirá el backend de Bancalite. Incluye NgModules, lazy-loading, ESLint + Prettier, Jest y NgRx preparados.
 
 ## Requisitos
 - Node 18+
@@ -38,7 +38,7 @@ npm run build
 ```
 
 ## Estructura
-- `src/app/core`: servicios singleton, interceptores, guards (cross‑cutting)
+- `src/app/core`: servicios singleton, interceptores, guards (cross-cutting)
 - `src/app/shared`: componentes/pipes/directivas reutilizables
 - `src/app/layout`: Header, Sidebar, Footer y layout protegido
 - `src/app/features`: módulos por dominio (auth, dashboard, clientes, cuentas, movimientos, reportes) con rutas lazy
@@ -79,7 +79,7 @@ npm run build
   - Componente: `src/app/shared/components/loader/loader.component.ts` (insertado en el layout protegido).
 - Interceptor: `src/app/core/interceptors/loader.interceptor.ts`.
   - Muestra loader para todas las requests.
-  - Muestra toast SweetAlert2 (top‑end) solo en respuestas exitosas de `POST/PUT/PATCH/DELETE`.
+  - Muestra toast SweetAlert2 (top-end) solo en respuestas exitosas de `POST/PUT/PATCH/DELETE`.
   - Los `GET` no generan toast. Los errores se tratan en `ErrorInterceptor`.
 
 ## Edición del Número de Documento
@@ -91,14 +91,15 @@ npm run build
 ## Proxy en desarrollo
 - `environment.apiBaseUrl = '/api'` y `proxy.conf.json` redirige a `http://localhost:8080`.
 - Ver: `angular.json` (`serve.proxyConfig`) y `bancalite-frontend/proxy.conf.json`.
-- ## Movimientos (UI)
+
+## Movimientos (UI)
 - Ruta: `/movimientos`.
 - Búsqueda por número de cuenta, titular y cédula con sugerencias (autocomplete). Al seleccionar, se fija el número y se consulta.
 - Filtros: fechas (onChange dispara búsqueda), tipo CRE/DEB (filtro local) y texto en descripción.
 - Registrar movimiento: `/movimientos/nuevo` con buscador de cuenta + select de tipo (catálogo), monto, descripción e idempotency key.
-- Post‑creación redirige a `/movimientos?numeroCuenta=...`.
+- Post-creación redirige a `/movimientos?numeroCuenta=...`.
 
-- ## Reportes (UI)
+## Reportes (UI)
 - Ruta: `/reportes`.
 - Modo "Por cuenta" (autocomplete por número/titular/cédula) y "Por cliente" (autocomplete por nombre/documento).
 - Fechas con cambio inmediato; render de resumen y tabla.
@@ -107,7 +108,7 @@ npm run build
   - Botón "Descargar PDF (Base64)": obtiene base64 y descarga.
 
 ## Docker (Nginx)
-El frontend cuenta con un `Dockerfile` multi-stage y una configuraci�n de Nginx para servir la SPA y proxyear `/api` hacia el backend.
+El frontend cuenta con un `Dockerfile` multi-stage y una configuración de Nginx para servir la SPA y hacer proxy de `/api` hacia el backend.
 
 ```bash
 docker build -t bancalite-web -f bancalite-frontend/Dockerfile .
@@ -115,7 +116,7 @@ docker run --rm -p 8081:80 bancalite-web
 # http://localhost:8081
 ```
 
-Con `docker-compose.yml` en la ra�z puedes levantar DB + API + Front con un solo comando:
+Con `docker-compose.yml` en la raíz puedes levantar DB + API + Front con un solo comando:
 
 ```bash
 docker compose up -d --build
