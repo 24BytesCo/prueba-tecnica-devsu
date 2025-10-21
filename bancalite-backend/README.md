@@ -70,7 +70,7 @@ Backend de Bancalite construido con ASP.NET Core (net9), EF Core (PostgreSQL), I
 2. Ejecuta API:
 
    ```bash
-   DOTNET_ENVIRONMENT=Development dotnet run --project src/Bancalite.WebApi
+   ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Bancalite.WebApi
    ```
 
 3. Swagger: `http://localhost:<puerto>/swagger`
@@ -97,6 +97,22 @@ cp .env.example .env
 ```bash
 docker compose up -d --build
 ```
+
+#### Solo para producción: inicializar base de datos
+
+Si configuraste `ASPNETCORE_ENVIRONMENT=Production`, la API no aplica migraciones automáticamente. Con los contenedores arriba, ejecuta el SQL que replica la estructura y carga datos iniciales:
+
+**Nota:** El sql debes descargarlo del repositorio en la ubicación `docs/db/bancalite_prod_data.sql` y ponerlo en la raiz de la carpeta local `bancalite-stack`
+
+```bash
+
+# Copiando el archivo al contenedor y ejecutándolo
+docker compose cp docs/db/bancalite_prod_data.sql db:/tmp/bancalite_prod_data.sql
+docker compose exec db sh -lc 'PGPASSWORD="$POSTGRES_PASSWORD" psql -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /tmp/bancalite_prod_data.sql'
+```
+
+
+Nota: ajusta la ruta al SQL si no estás en la raíz del repositorio.
 
 3) Verifica
 
